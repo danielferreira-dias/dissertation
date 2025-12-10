@@ -1,0 +1,177 @@
+% we include the glossary here (frontmatter is included with \input, so this command is as if it was in main.tex)
+%\input{frontmatter/glossary} % the command makenoidxglossaries requires that the glossary entries must be defined in the preamble (to be compatible with overleaf)
+
+\frontmatter % Use roman page numbering style (i, ii, iii, iv...) for the pre-content pages
+
+\pagestyle{plain} % Default to the plain heading style until the thesis style is called for the body content
+
+%----------------------------------------------------------------------------------------
+%	TITLE PAGE
+%----------------------------------------------------------------------------------------
+
+\maketitlepage
+
+%----------------------------------------------------------------------------------------
+%	STATEMENT OF INTEGRITY
+%----------------------------------------------------------------------------------------
+
+\begin{soi}
+
+% here you put the statement of integrity in the main language of the work. Choose one option.
+
+[Maintain only the version corresponding to the main language of the work]
+\vspace{1cm}
+
+% if the main language is English:
+
+I hereby declare that I have conducted this academic work with integrity.
+
+I have not plagiarised or applied any form of undue use of information or falsification of results along the process leading to its elaboration.
+
+Therefore, the work presented in this document is original and was authored by me, having not been previously used for any other purpose. The exceptions [REMOVE THIS CLAUSE IF IT DOES NOT APPLY - REMOVE THIS COMMENT] are explicitly acknowledged in the section that addresses ethical considerations. This section also states how Artificial Intelligence tools were used and for what purpose.
+
+I further declare that I have fully acknowledged the Code of Ethical Conduct of P.PORTO.
+
+ISEP, Porto, [Month] [Day], [Year]
+
+\vspace{1cm}
+	
+% if the main language is Portuguese:
+
+Declaro ter conduzido este trabalho acad\'emico com integridade.
+
+N\~ao plagiei ou apliquei qualquer forma de uso indevido de informa\c{c}\~oes ou falsifica\c{c}\~ao de resultados ao longo do processo que levou \`a sua elabora\c{c}\~ao.
+
+Portanto, o trabalho apresentado neste documento \'e original e de minha autoria, n\~ao tendo sido utilizado anteriormente para nenhum outro fim. As exce\c{c}\~oes [REMOVER ESTE PER\'IODO NO CASO DE N\~AO SE APLICAR - APAGAR ESTE COMENT\'ARIO] est\~ao explicitamente reconhecidas na sec\c{c}\~ao onde s\~ao abordadas as considera\c{c}\~oes \'eticas. Esta sec\c{c}\~ao tamb\'em declara como as ferramentas de Intelig\^encia Artificial foram utilizadas e para que finalidade.
+
+Declaro ainda que tenho pleno conhecimento do C\'odigo de Conduta \'Etica do P.PORTO.
+
+ISEP, Porto, [Dia] de [M\^es] de [Ano]
+	
+
+\end{soi}
+
+
+%----------------------------------------------------------------------------------------
+%	DEDICATION  (optional)
+%----------------------------------------------------------------------------------------
+%
+%\dedicatory{For/Dedicated to/To my\ldots}
+\begin{dedicatory}
+The dedicatory is optional. Below is an example of a humorous dedication.
+
+"To my wife Marganit and my children Ella Rose and Daniel Adam without whom this book would have been completed two years earlier." in "An Introduction To Algebraic Topology" by Joseph J. Rotman.
+\end{dedicatory}
+
+%----------------------------------------------------------------------------------------
+%	ABSTRACT PAGE
+%----------------------------------------------------------------------------------------
+
+\begin{abstract}
+
+% here you put the abstract in the main language of the work.
+
+This document explains the main formatting rules to apply to a Master Dissertation work for the MSc in Artificial Intelligence Engineering of the Computer Engineering Department (DEI) of the School of Engineering (ISEP) of the Polytechnic of Porto (IPP).
+
+The rules here presented are a set of recommended good practices for formatting the disseration work. Please note that this document does not have definite hard rules, and the discussion of these and other aspects of the development of the work should be discussed with the respective supervisor(s).
+
+This document is based on a previous document prepared by Dr. Fátima Rodrigues (DEI/ISEP).
+
+The abstract should usually not exceed 200 words, or one page. When the work is written in Portuguese, it should have an abstract in English.
+
+Please define up to 6 keywords that better describe your work, in the \emph{THESIS INFORMATION} block of the \file{main.tex} file.
+
+\end{abstract}
+
+\begin{abstractotherlanguage}
+% here you put the abstract in the "other language": English, if the work is written in Portuguese; Portuguese, if the work is written in English.
+
+Após o resumo/abstract é obrigatório colocar as principais palavras-chave/keywords do tema em que se insere o trabalho desenvolvido, sendo permitido um máximo de 6 palavras-chave/keywords, estas devem ser caraterizadoras do trabalho desenvolvido e surgirem com frequência no documento escrito.
+
+Para alterar a língua basta ir às configurações do documento no ficheiro \file{main.tex} e alterar para a língua desejada ('english' ou 'portuguese')\footnote{Alterar a língua requer apagar alguns ficheiros temporários; O target \keyword{clean} do \keyword{Makefile} incluído pode ser utilizado para este propósito.}. Isto fará com que os cabeçalhos incluídos no template sejam traduzidos para a respetiva língua.
+
+\end{abstractotherlanguage}
+
+%----------------------------------------------------------------------------------------
+%	ACKNOWLEDGEMENTS (optional)
+%----------------------------------------------------------------------------------------
+
+\begin{acknowledgements}
+
+The optional Acknowledgment goes here\ldots Below is an example of a humorous acknowledgment.
+
+"I'd also like to thank the Van Allen belts for protecting us from the harmful solar wind, and the earth for being just the right distance from the sun for being conducive to life, and for the ability for water atoms to clump so efficiently, for pretty much the same reason. Finally, I'd like to thank every single one of my forebears for surviving long enough in this hostile world to procreate. Without any one of you, this book would not have been possible." in "The Woman Who Died a Lot" by Jasper Fforde.
+\end{acknowledgements}
+
+%----------------------------------------------------------------------------------------
+%	LIST OF CONTENTS/FIGURES/TABLES PAGES
+%----------------------------------------------------------------------------------------
+
+\tableofcontents % Prints the main table of contents
+
+\listoffigures % Prints the list of figures
+
+\listoftables % Prints the list of tables
+
+\iflanguage{portuguese}{
+\renewcommand{\listalgorithmname}{Lista de Algor\'itmos}
+}
+\listofalgorithms % Prints the list of algorithms
+\addchaptertocentry{\listalgorithmname}
+
+
+\renewcommand{\lstlistlistingname}{List of Source Code}
+\iflanguage{portuguese}{
+\renewcommand{\lstlistlistingname}{Lista de C\'odigo}
+}
+\lstlistoflistings % Prints the list of listings (programming language source code)
+\addchaptertocentry{\lstlistlistingname}
+
+
+%----------------------------------------------------------------------------------------
+%	ABBREVIATIONS
+%----------------------------------------------------------------------------------------
+%\begin{abbreviations}{ll} % Include a list of abbreviations (a table of two columns)
+%%\textbf{LAH} & \textbf{L}ist \textbf{A}bbreviations \textbf{H}ere\\
+%%\textbf{WSF} & \textbf{W}hat (it) \textbf{S}tands \textbf{F}or\\
+%\end{abbreviations}
+
+%----------------------------------------------------------------------------------------
+%	SYMBOLS
+%----------------------------------------------------------------------------------------
+
+\begin{symbols}{lll} % Include a list of Symbols (a three column table)
+
+$a$ & distance & \si{\meter} \\
+$P$ & power & \si{\watt} (\si{\joule\per\second}) \\
+%Symbol & Name & Unit \\
+
+\addlinespace % Gap to separate the Roman symbols from the Greek
+
+$\omega$ & angular frequency & \si{\radian} \\
+
+\end{symbols}
+
+
+
+%----------------------------------------------------------------------------------------
+%	ACRONYMS
+%----------------------------------------------------------------------------------------
+
+\newcommand{\listacronymname}{List of Acronyms}
+\iflanguage{portuguese}{
+\renewcommand{\listacronymname}{Lista de Acr\'onimos}
+}
+
+%Use GLS
+\glsresetall
+
+%\printglossary[title=\listacronymname,type=\acronymtype,style=long]
+\printnoidxglossary[title=\listacronymname,type=\acronymtype,style=long] % command compatible with overleaf
+
+%----------------------------------------------------------------------------------------
+%	DONE
+%----------------------------------------------------------------------------------------
+
+\mainmatter % Begin numeric (1,2,3...) page numbering
+\pagestyle{thesis} % Return the page headers back to the "thesis" style
