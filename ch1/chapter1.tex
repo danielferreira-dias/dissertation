@@ -1,68 +1,144 @@
 % Chapter 1
 % 
-\chapter{Thesis Structure} % Main chapter title
+\chapter{Introduction} % Main chapter title
 \label{chap:Chapter1} % For referencing the chapter elsewhere, use Chapter~\ref{Chapter1}
 
 
 %-------------------------------------------------------------------------------
 %---------
 %
-\section{Introduction} 
+\section{Contextualization} 
 \label{sec:chap1_introduction} %For referencing this section elsewhere, use Section~\ref{sec:chap1_introduction}
 
-\acrlong{AI}, which is abbreviated \acrshort{AI}.
-The goal of a Master dissertation is to document the work developed and highlight its importance. Firstly, the author should aim to follow the best practices in terms of writing style and organise the contents such that the message is clear. The language style used should be clear, and avoid colloquial expressions.
+The field of Natural Language Processing (NLP) has undergone a radical transformation over the last decade . Historically, early NLP relied heavily on statistical methods and Recurrent Neural Networks (RNNs) or Long Short-Term Memory (LSTM) networks to process text (\cite{raeini2025evolution, chu2024history}). While effective for short sequences, these architectures struggled with long-range dependencies and lacked parallelization capabilities. The paradigm shifted fundamentally with the introduction of the Transformer architecture in 2017 (\cite{vaswani2017attention}). The Transformer mechanism introduced "self-attention," allowing models to weigh the importance of different words in a sentence regardless of their positional distance. This architecture laid the foundation for the current generation of generative AI, enabling models to be trained on massive datasets to learn the statistical structure of language itself, giving birth to the new term LLMs.
 
-Please use an automated spell checker during the writing of your work.
+The impact of the Transformer architecture was further amplified by the systematic scaling of model parameters, training data, and computational resources. Empirical evidence has shown that such increase in scale lead to predictable and often non-linear improvements in performance across a wide range of linguistic tasks, a phenomenon formalized through "Scaling Laws"(\cite{pearce2024reconcilingkaplanchinchillascaling}). As the models grew, new capabilities also began to emerge, enabling them to perform tasks without explicit task-specific training (\cite{brown2020language}). These abilities were compared to the ones of human-like mind such as Chain of Thought, Multi-Step Reasoning which led LLMs to be positioned as the general-purpose language understanding and generation systems  (\cite{wei2023chainofthoughtpromptingelicitsreasoning}).
 
-This chapter provides some brief recommendations for the writing of your dissertation. 
+This generalization capability has caused a paradigm switch in Human-Computer Interaction (HCI), moving the digital interface from rigid, command-based interactions to natural language conversations. In the present day, LLMs are seen as "Foundation Models", a term describing systems trained on broad data that can be adapted to a vast range of downstream tasks. Beyond the initial applications in software engineering, these models are now driving transformative shifts in high-stakes domains, ranging from personalized education \cite{kasneci2023chatgpt, revolution2025edu} and financial forecasting \cite{finance2024survey} to complex legal reasoning \cite{legal2025framework} and scientific discovery \cite{science2024survey}. This shift enabled users to retrieve and reason over complex information using simple natural language prompts. Due to these changes toward language-centered interaction, LLMs have begun to cause an impact across multiple sectors of society significantly increasing human productivity by automating routine cognitive tasks and offering decision support (\cite{brynjolfsson2023generative, garg2025rise, alnaqbi2024enhancing}).
 
-\section{Structure}
+Despite the dominance of these massive Foundation Models, the research trajectory has recently been divided. While one path continues to pursue larger parameters for generalist capabilities, a parallel body of research has emerged challenging the assumption that "bigger is always better" for domain-specific performance (\cite{lepagnol2024smallmodels}). This perspective was validated by studies on Compute-Optimal training, most notably DeepMind's "Chinchilla" research, which demonstrated that model performance depends less on sheer parameter count and more on the quality and quantity of tokens seen during training (\cite{hoffmann2022training}), meaning that when models are exposed to a vast and high quality data, they could achieve performance levels comparable to larger models.
 
-The structure of the document can be divided in three major parts: Introduction, Body and Conclusions.
+This realization gave rise to the class of Small Language Models (SLMs). Typically defined as models with fewer than ~10 billion parameters \cite{belcak2025small}, SLMs prioritize training efficiency and data quality. However, to compete with the capabilities of larger models, SLMs are frequently deployed in conjunction with augmentation strategies, specifically Fine-Tuning and Retrieval-Augmented Generation (RAG). 
 
-The introduction includes, at least, a statement of what was the work developed; a brief, focused, state of the art; an explanation of how the work fits into the current state of the art, and how it contributes to it; a description of the structure of the document.
+To understand this architectural shift, it is necessary to define the concept of Agentic Systems. Unlike traditional conversational models that passively generate text in response to a prompt, an Agentic System utilizes the Language Model as a cognitive controller capable of autonomous reasoning and planning \cite{xi2023rise, wang2024survey}. In this paradigm, the model is equipped with a feedback loop (often termed the Perception-Action loop) that allows it to decompose abstract user goals into executable sub-tasks, invoke external tools (such as APIs or databases), and iteratively refine its output based on environmental feedback.
 
-The Body of the dissertation should include a literature review (in one or more chapters) and one or more chapters that describe the work developed and the results, justifying them adequately.
+Consequently, the true potential of SLMs is not impactful when they operate in isolation, but when they are integrated into Agentic Systems. As argued by \cite{belcak2025small}, the integration of SLMs with augmenting tools, such as Retrieval-Augmented Generation (RAG) and being able to fetch data with external tools such as API calls, fundamentally transforms the role of the model. In this configuration, the SLM is a true competitor comparable to a LLM, achieving better high-quality and precision answers to that of a larger model (\cite{lepagnol2024smallmodels, hsieh2023distilling, pingua2025medicalLLMs, soudani2024fine}), not only that but their lightweight architecture makes them an appealing choice for scenarios where computational efficiency is ciritcal and data privacy is needed since they are able to be hosted locally (\cite{lepagnol2024smallmodels, kim2025_plugin_finetuning, dettmers2023qloraefficientfinetuningquantized}). While a generalist LLM attempts to handle all tasks via internal parametric memory, a Agentic System decomposes complex workflows into modular sub-tasks. By specializing and equipping an SLM with RAG, the system creates a "Specialized Agent" capable of retrieving verifiably accurate medical context without needing the massive overhead of a trillion-parameter model (\cite{belcak2025small}).
 
-The conclusions make a final balance of the work, highlighting the main aspects of the work and making critical judgments about what was accomplished, and providing suggestions for future work, if appropriate. 
+Nevertheless, a limitation remains when relying on a single model, regardless of its size, to handle a diverse array of tasks. When a solitary agent is tasked with perceiving complex and visual inputs, retrieving context, reasoning, and generating patient-centric responses simultaneously, it faces "cognitive overload," often leading to a degradation in performance known as the "lost-in-the-middle" phenomenon or context dilution (\cite{liu2023lost}). To mitigate this, the frontier of Agentic AI has shifted toward Multi-Agent Systems (MAS) (\cite{chenhua2025msa}). The core philosophy of MAS is "decomposition": breaking down a complex, multifaceted problem into smaller, manageable sub-tasks, each handled by a specialized agent (\cite{fu2025meta_prompting_protocol, wu2023autogen}). Rather than relying on a single monolithic model to act as a universal expert, multi-agent architectures adopt a divide-and-conquer strategy in which coordination and specialization are treated as first-class design principles. Within such architectures, a particular importance is placed on the routing or orchestration component, which is responsible for analyzing incoming inputs and delegating tasks to appropriate downstream agents. 
 
-\subsection{Contents Check List}
-
-Table~\ref{tab:checklist} presents a check list defining the contents of the dissertation.
-
-{\small
-\begin{table}
-\caption{Check list}
-\label{tab:checklist}
-\centering
-\begin{tabular}{l l l}
-\toprule
-\tabhead{Description} & \tabhead{Mandatory ?} & \tabhead{Page number} \\
-\midrule
-Cover & Yes & None\\
-Front Page (first page of the template) & Yes & None\\
-Abstract (Portuguese) & Yes & Roman numeral\\
-Abstract (English) & Yes & Roman numeral\\
-Acknowledgments & No & Roman numeral\\
-Table of Contents & Yes & Roman numeral\\
-List of Figures & Yes & Roman numeral\\
-List of Tables & Yes & Roman numeral\\
-List of Source Code Listings & Yes & Roman numeral\\
-List of Acronyms and List of Symbols & Yes & Roman numeral\\
-\makecell[cl]{Dissertation Body (including introduction, \\contributions, and conclusions)} & Yes & Arabic numeral\\
-References & Yes & Arabic numeral\\
-Appendices and Other Tables of Contents & No & Arabic numeral\\
-\bottomrule\\
-\end{tabular}
-\end{table}
-}
+This direction aligns closely with the concept of heterogeneous agentic systems proposed by \cite{belcak2025small}, which argues that effective agentic architectures are inherently composite, combining models of different modalities and scales according to the demands of each sub-task. By leveraging modality-specific inductive biases and maintaining clear functional boundaries between agents, these modular architectures aim to improve robustness, interpretability, and scalability, while enabling flexible system evolution through the replacement or refinement of individual components without retraining the entire system (\cite{bubeck2023sparks, belcak2025small}).
 
 
-\section{Formatting}
+\section{Problem Description}\label{sec:prob_description}
 
-The document can be written in Portuguese or English. The minimum number of pages is 60 and the maximum is 120 (not counting the Annexes). Small deviations are allowed. Please follow the margins and fonts  defined in this template. The font size should be 11pt. The document should be printed double sided.
+The prevailing approach to Generative AI has relied heavily on scaling laws (\cite{pearce2024reconcilingkaplanchinchillascaling}), assuming that larger parameters equate to superior performance. However, this monolithic, scale-centric model has revealed significant structural limitations. The computational and energy costs associated with the training and inference of these models have become prohibitive for the majority of organizations, particularly when considering the substantial hardware requirements for deployment (\cite{dettmers2023qloraefficientfinetuningquantized, avinash2025profilingloraqlorafinetuningefficiency}). For real-time applications, the latency introduced by routing data to massive cloud-based models creates a bottleneck that degrades user experience, rendering them impractical for responsive, edge-based diagnostic tools.
 
-Note that the graphical aspect of the thesis is important, but does not replace a well-written and well-organised presentation of ideas.
+More critically, within highly regulated domains such as healthcare, the reliance on centralized cloud infrastructures or external AI services conflicts with imperative requirements for data privacy and sovereignty. The transmission of sensitive patient data, specifically dermatological imagery and personal medical history, to external API endpoints introduces unacceptable risks regarding data residency and confidentiality. As noted by \cite{petrick2023regulatory} and \cite{khalid2023privacy}, the "black box" nature of commercial LLM APIs often prevents granular control over data retention policies, creating a compliance gap that necessitates the use of local, controllable architectures.
 
-Please refer to Chapter~\ref{chap:Chapter2} and Chapter~\ref{chap:Chapter3} for details about this template, how to format the document and insert citations, figures, tables, equations and other elements.
+Beyond infrastructure, the fundamental architecture of generalist LLMs poses a safety risk in diagnostic scenarios. Large models trained on the open internet function as probabilistic engines rather than knowledge bases; they are prone to "hallucinations," generating plausible but factually incorrect medical advice with high confidence (\cite{ji2022survey_hallucination}). In a monolithic setup, it is difficult to constrain the model to strictly medical facts. This lack of determinism and explainability creates a "trust gap." A generalist model cannot easily point to the specific medical journal it used to derive a diagnosis, making verification impossible for the user. This necessitates a shift toward systems that decouple reasoning (the model) from knowledge (the data), a feature inherent to RAG-augmented architectures but inefficient to implement at the scale of LLMs.
+
+This scenario reveals a saturation point in the strategy of pure scalability and motivates an urgent shift toward a new design philosophy centered on smaller, more efficient, and controllable models. Small Language Models (SLMs), when appropriately specialized, offer a viable alternative by preserving performance while enabling privacy-preserving and resource-efficient deployment. Furthermore, when paired with external tools for context augmentation, SLMs offer a pathway to mitigate the "black box" nature of Natural Language Generation, enhancing interpretability.
+
+This transition aligns with the prospective vision of the present industry, which posits that SLMs represent the future of Agentic Systems (\cite{belcak2025small}). In this new perspective, model size becomes secondary to specialization. Current research demonstrates that a specialized SLM, when augmented by context-enrichment tools such as Retrieval-Augmented Generation (RAG) and adaptation methods like Fine-Tuning (\cite{pingua2025medicalLLMs, soudani2024fine, oruganty2025DermETAS}), can achieve response quality superior to that of generalist LLMs, particularly when supported by external evidentiary verification (\cite{hassan2025optimizing}).
+
+However, as previously noted, a single LLM Agent does not guarantee clinical intelligence, specifically when complex tasks or workflows are involved. The prevailing trend is evolving toward Multi-Agent Architectures, where system complexity resides not within a single neural network, but in the orchestration of multiple specialists. This evolution is driven by the demonstrated cognitive limitations of monolithic systems in multitasking environments. Recent evidence suggests that agents, when subjected to demanding workloads, suffer from severe performance degradation. Klang et al. (\cite{klang2025orchestrated}) demonstrated that the accuracy of a monolithic agent collapses from 73.1\% to 16.6\% under high cognitive load. In contrast, a multi-agent system was able to sustain an accuracy of 65.3\% under the same conditions, validating the superior efficacy and robustness of this modular architecture (\cite{zhou2025mam, tian2025beyond}).
+
+%\subsection{Contents Check List}
+
+% Table~\ref{tab:checklist} presents a check list defining the contents of the dissertation.
+
+
+% {\small
+% \begin{table}
+% \caption{Check list}
+% \label{tab:checklist}
+% \centering
+% \begin{tabular}{l l l}
+% \toprule
+% \tabhead{Description} & \tabhead{Mandatory ?} & \tabhead{Page number} \\
+% \midrule
+% Cover & Yes & None\\
+% Front Page (first page of the template) & Yes & None\\
+% Abstract (Portuguese) & Yes & Roman numeral\\
+% Abstract (English) & Yes & Roman numeral\\
+% Acknowledgments & No & Roman numeral\\
+% Table of Contents & Yes & Roman numeral\\
+% List of Figures & Yes & Roman numeral\\
+% List of Tables & Yes & Roman numeral\\
+% List of Source Code Listings & Yes & Roman numeral\\
+% List of Acronyms and List of Symbols & Yes & Roman numeral\\
+% \makecell[cl]{Dissertation Body (including introduction, \\contributions, and conclusions)} & Yes & Arabic numeral\\
+% References & Yes & Arabic numeral\\
+% Appendices and Other Tables of Contents & No & Arabic numeral\\
+% \bottomrule\\
+% \end{tabular}
+% \end{table}
+% }
+
+
+\section{Objectives}
+
+In response to the critical challenges identified in Problem Description section (\ref{sec:prob_description}), specifically the prohibitive computational costs of monolithic LLM systems, the privacy risks inherent to cloud-based architectures, and the documented cognitive degradation of single agents under multitasking loads, this research aims to validate an architecture that prioritizes efficiency over scale and specialization over generality.
+
+To mitigate the "black box" nature of generalist models and ensure compliance with healthcare data privacy, the proposed solution moves away from a "one-size-fits-all" cloud dependency. Instead, it implements a modular pipeline where the cognitive load is distributed across specialized local agents. Specifically, this work develops a system initiated by a Vision-Language Model (VLM) acting as a "Router." This router analyzes patient-uploaded imagery to classify dermatological conditions (e.g., Eczema, Melanoma) and dynamically directs the user's session to a dedicated Small Language Model (SLM).
+
+These downstream SLM agents are engineered not as creative generators, but as specialized advisors augmented with Retrieval-Augmented Generation (RAG). By grounding the SLM's responses in a curated vector database of medical literature, the system aims to provide verifiable, context-aware medical guidance. This approach intends to demonstrate that a coordinated ensemble of lightweight models (8B parameters) can achieve diagnostic utility comparable to massive cloud-based models, while enabling local, privacy-preserving deployment on consumer-grade hardware.
+
+\subsection{Main Objective}
+
+Dermatology is a multimodal field that requires combining visual analysis with medical knowledge. While AI is currently good at isolated tasks, such as using CNNs for images or LLMs for text, there is a lack of integrated systems that can handle both steps seamlessly. Therefore, dermatology is the ideal domain to validate Small Language Models (SLMs). Unlike massive Cloud models, SLMs can run locally to guarantee data privacy, and they can be paired with Retrieval-Augmented Generation (RAG) to ensuring the medical advice is factually grounded.
+
+Driven by this specific intersection of privacy, multimodal reasoning, and resource efficiency, the main objective of this dissertation is:
+
+To design, implement, and validate a privacy-preserving Multi-Agent System that orchestrates a Vision-Language Model (VLM) for visual classification and specialized Small Language Models (SLMs) for advisory; aiming to demonstrate that a modular architecture can provide context-aware, verifiable dermatological support comparable to monolithic LLM Systems.
+
+\subsection{Secondary Objectives}
+
+\begin{itemize}
+
+\item \textbf{Gather data on different type of Skin Conditions Disease:} Aggregate and preprocess a verified set of skin condition images for visual classification, alongside a corpus of validated medical literature to construct the Knowledge Bases required for the RAG retrieval systems.
+
+\item \textbf{Implementation of a Visual Language Model:} Configure a Vision Language Model (VLM) capable of analyzing user-uploaded imagery to classify distinct skin pathologies (e.g., Eczema, Psoriasis, Melanoma) and dynamically route the session to the appropriate downstream agent.
+
+\item \textbf{Create RAG ingestion pipeline:} Design a robust retrieval architecture by evaluating specific data processing strategies, including semantic chunking, hybrid search algorithms (keyword + vector), and re-ranking mechanisms, to maximize information density within the constrained context windows of Small Language Models.
+
+\item \textbf{Develop specialized SLM-RAG Agents:} Develop lightweight agents using Small Language Models integrated with condition-specific vector databases, ensuring that responses are grounded in retrieved context rather than model weights alone to minimize hallucinations.
+
+\item \textbf{Orchestrate the Multi-Agent System workflow:} Design the control logic that enables seamless state transfer between the Visual Language Model (VLM) and the Small Language Model (SLM), maintaining context without the latency or overhead of a monolithic system.
+
+\item \textbf{Evaluation of Small Language Models againts Large Language Models:} Validate the architecture against Ground Truth benchmarks for diagnostic accuracy to demonstrate the precision anda accuracy of SLMs over generalist LLMs .
+
+\end{itemize}
+
+
+\section{Ethical Considerations and Social Impact}
+
+The deployment of Agentic AI systems in healthcare, specifically within dermatological triage, introduces significant ethical challenges regarding data privacy, algorithmic fairness, and patient safety \cite{ziller2024reconciling, khalid2023privacy}. While the proposed architecture leverages Small Language Models (SLMs) to mitigate computational overhead, it must inherently address the risks associated with automated medical decision support and comply with emerging regulatory frameworks.
+
+\subsection{Medical and Diagnostic Ethics}
+
+\textbf{\textit{Limitations and Disclaimers}}: The proposed system, while leveraging advanced Vision Language Models for skin disease classification, must operate within clear ethical boundaries regarding medical practice. The system should be positioned as a supplementary informational tool rather than a replacement for professional medical diagnosis. Users must receive explicit disclaimers that the classification results are preliminary and require confirmation by licensed dermatologists. This is particularly crucial given that skin diseases can present similarly across different conditions, and misclassification could lead to delayed treatment or inappropriate self-care measures (\cite{taylor2025leveraging}).
+
+\textbf{\textit{Accuracy and Reliability Concerns}}: Vision Language Models, despite their sophistication, may exhibit varying performance across different skin tones, disease severities, and image qualities. The training data's representation becomes ethically significant; if the model is predominantly trained on lighter skin tones (Fitzpatrick types I-III), it may perform poorly on darker complexions (types IV-VI), perpetuating healthcare disparities (\cite{groh2021evaluating}).
+
+\subsection{Regulatory Compliance: The EU AI Act}
+
+\textbf{\textit{High-Risk Classification}}: Under the European Union Artificial Intelligence Act (EU AI Act), AI systems intended to be used for medical triage or as safety components of medical devices are classified as "High-Risk AI Systems" (Annex III) (\cite{eu_ai_act_2024}). Consequently, this architecture is designed with specific adherence to \textit{Article 14 (Human Oversight)}, ensuring that the system acts as a Clinical Decision Support System (CDSS) rather than an autonomous prescriber.
+
+\textbf{\textit{Transparency and Data Governance}}: In compliance with \textit{Article 13} (Transparency), the interface is designed to clearly explicitly inform the user that they are interacting with an automated agent. Furthermore, to satisfy data governance requirements regarding bias monitoring (\textit{Article 10}), the proposed validation phase specifically evaluates the VLM's performance across diverse demographic groups to identify and document potential discriminatory outputs.
+
+\subsection{Privacy and Data Protection}
+
+\textbf{\textit{Sensitive Health Information}}: User-uploaded images of skin conditions are highly sensitive Personally Identifiable Information (PII) and Protected Health Information (PHI). Traditional monolithic LLM architectures often require sending this data to centralized cloud API endpoints (e.g., OpenAI, Anthropic) \cite{belcak2025small}, creating risks of data interception and non-consensual training.
+
+\textbf{\textit{Edge AI and Sovereignty}}: The proposed SLM-based Multi-Agent System supports the paradigm of Edge AI \cite{wang2024security}. By utilizing smaller, resource-efficient models, the architecture enables the potential for local execution (on-device or on private servers). This ensures data privacy, as patient data does not necessarily need to traverse public cloud infrastructure to receive a high-quality inference, aligning with GDPR principles regarding data minimization.
+
+\subsection{Clinical Safety and Hallucination Mitigation}
+
+\textbf{\textit{Liability and Accountability}}: Generative models are prone to "hallucinations", generating plausible but factually incorrect information \cite{ji2022survey_hallucination}. In a medical context, such errors can be dangerous. Small Language Models, having fewer parameters, theoretically possess a narrower knowledge base than larger models, which could increase this risk.
+
+\textbf{\textit{RAG as an Ethical Safeguard and Explainability}}: The implementation of Retrieval-Augmented Generation (RAG) is not merely a technical optimization but an ethical imperative. By constraining the SLM to answer only based on retrieved, validated medical chunks, the system shifts from "creative generation" to "summarization of ground truth," significantly reducing the risk of fabricating medical advice (\cite{hassan2025optimizing}).
+
+\subsection{Environmental Impact and Democratization}
+
+\textbf{\textit{Carbon Footprint}}: The training and inference of massive Monolithic LLMs carry a substantial carbon footprint (\cite{liu2024green}). Promoting a "bigger is better" approach restricts advanced AI medical tools to well-funded institutions with massive compute clusters.
