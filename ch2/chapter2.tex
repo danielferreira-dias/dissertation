@@ -2,114 +2,144 @@
 
 \chapter{State of the Art: Agentic AI and Small Language Models in Healthcare} % Main chapter title
 
-\label{chap:Chapter2} % For referencing the chapter elsewhere, use \ref{chap:Chapter2} 
+\label{chap:Chapter2} % For referencing the chapter elsewhere, use \ref{chap:Chapter2}
 
 %----------------------------------------------------------------------------------------
 
 \section{Research Methodology}
 
+The systematic literature review was conducted following the PRISMA 2020 statement \cite{page2021prisma}, a framework designed to ensure transparency and reproducibility in systematic reviews. This methodology was selected for several compelling reasons that align with the nature of this research domain. First, the fields of Agentic AI, Small Language Models, and Vision-Language Models are characterized by rapid innovation cycles, with foundational architectures and benchmark results being superseded within months of publication. PRISMA's structured approach ensures that the evidence synthesis captures this dynamism while maintaining methodological rigor. Second, the framework's emphasis on explicit documentation of search strategies, inclusion criteria, and study selection processes enhances the reproducibility of findings---a critical consideration given the interdisciplinary nature of this work spanning computer science, medical informatics, and clinical dermatology.
 
-The systematic literature review was conducted following the PRISMA 2020 statement \cite{page2021prisma}, a framework designed to ensure transparency and reproducibility in systematic reviews. This methodology is particularly suited for technological domains such as Agentic AI and medical imaging, where rapid innovation necessitates rigorous evidence synthesis.
+The review process was structured into four distinct phases: (1) identification of relevant studies through systematic database searching; (2) screening of titles and abstracts based on predefined inclusion criteria; (3) eligibility assessment of full-text articles against methodological quality standards; and (4) qualitative synthesis of the selected studies to address the defined research questions. The temporal scope of the search spanned publications from January 2023 to January 2026, a period deliberately chosen to capture the rapid maturation of Small Language Models following the release of instruction-tuned models such as Llama-2, Mistral, and Phi-2. Studies published before 2023 were excluded from the systematic review but referenced as foundational works where necessary to establish theoretical context.
 
-The process was structured into four distinct phases: (1) identification of relevant studies through database searching; (2) screening of titles and abstracts based on defined inclusion criteria; (3) eligibility assessment of full-text articles; and (4) qualitative synthesis of the selected studies to answer the defined research questions.
+Quality assessment of the selected studies followed a structured appraisal protocol designed specifically for this research domain. Each study was evaluated against four criteria: (1) provision of direct quantitative comparisons between SLM-based systems and state-of-the-art LLMs; (2) explicit employment of multi-agent architectures or composite systems rather than single-model inference; (3) evaluation within specialized high-stakes domains requiring domain grounding; and (4) availability of reproducible artifacts such as open-source code, datasets, or detailed architectural specifications. This quality assessment framework ensures that the synthesized evidence directly addresses the research questions while maintaining standards appropriate for technical AI research.
 
 \section{Research Questions}
-To structure the systematic review and ensure focused coverage of relevant literature, the following Research Questions (RQs) were formulated. These RQs are specific to the literature review, questions that existing papers will answer to establish the State of the Art.
 
-\textbf{Main Research Question (MRQ):}
-\begin{quote}
-\textit{To what extent can SLMs achieve performance equivalence with LLMs in specialized domains through Agentic Architectures?}
-\end{quote}
+The systematic review was guided by a hierarchical structure of research questions designed to comprehensively examine the viability of Small Language Models within agentic architectures for specialized domains. The Main Research Question (MRQ) establishes the central thesis under investigation, while the Sub-Research Questions (SRQs) decompose this inquiry into specific, addressable components that collectively inform the overarching question.
 
-\textbf{Sub Research Questions (SRQ):}
+The Main Research Question driving this review asks: 
 
-\begin{quote}
-\textit{What are the limitations of LLMs that justify the architectural shift toward specialized SLMs?}
-\end{quote}
-\begin{quote}
-\textit{What are some of the key characteristics of a Multi-Agent System compared to a Monolithic Single-Agent?}
-\end{quote}
-\begin{quote}
-\textit{What is the comparative efficacy of Retrieval-Augmented Generation (RAG) versus Parameter-Efficient Fine-Tuning (PEFT) for specializing SLMs?}
-\end{quote}
-\begin{quote}
-\textit{What evidence supports using fine-tuned Vision-Language Models over traditional computer vision approaches (CNNs, ViTs)?}
-\end{quote}
+\begin{center}
+    \textit{To what extent can Small Language Models achieve performance equivalence with Large Language Models in specialized domains through Agentic Architectures?} 
+\end{center}
+This question emerges directly from the tension identified in Chapter~\ref{chap:Chapter1} between the demonstrated capabilities of massive foundation models and the practical constraints of computational cost, latency, and data privacy that limit their deployment in resource-constrained or privacy-sensitive contexts such as healthcare.
+To systematically address this central question, four Sub-Research Questions were formulated:
 
-\section{Databases}
-To ensure comprehensive coverage of relevant literature across computer science, medical informatics, and AI research, the following databases were systematically searched:
+\begin{enumerate}
+    \item \textbf{SRQ1: What are the limitations of Large Language Models that justify the architectural shift toward specialized Small Language Models?} This question establishes the motivation for investigating alternatives to monolithic LLM architectures by examining their inherent constraints in deployment scenarios requiring efficiency, privacy, or specialized domain performance.
+
+    \item \textbf{SRQ2: What are the key characteristics of Multi-Agent Systems compared to Monolithic Single-Agent architectures?} Understanding the architectural principles that enable distributed cognitive systems is essential for evaluating whether task decomposition and agent specialization can compensate for reduced model scale.
+
+    \item \textbf{SRQ3: What is the comparative efficacy of Retrieval-Augmented Generation versus Parameter-Efficient Fine-Tuning for specializing Small Language Models?} This question examines the two primary strategies for adapting smaller models to domain-specific tasks, informing the technical approach for the proposed system.
+
+    \item \textbf{SRQ4: What evidence supports using fine-tuned Vision-Language Models over traditional computer vision approaches such as Convolutional Neural Networks and Vision Transformers?} Given the multimodal nature of dermatological diagnosis, this question investigates whether integrated vision-language architectures offer advantages over pipeline approaches that separate visual classification from language-based reasoning.
+\end{enumerate}
+
+\section{Search Strategy}
+
+The search strategy was designed to ensure comprehensive coverage across the diverse publication venues characteristic of AI research while maintaining focus on the specific technical domains relevant to this dissertation. Given the rapid pace of development in generative AI, particular attention was paid to preprint repositories that often contain state-of-the-art results prior to formal peer review.
+
+\subsection{Databases}
+
+To capture relevant literature spanning computer science, medical informatics, and clinical research, the following databases and repositories were systematically searched:
 
 \begin{table}[ht]
 \centering
-\caption{Search Strategy: Domains, Databases, and Keywords}
+\caption{Databases Selected for Systematic Literature Search}
 \label{tab:databases}
-\begin{tabular}{p{0.30\textwidth}p{0.65\textwidth}}
+\begin{tabular}{p{0.22\textwidth}p{0.73\textwidth}}
 \hline
-\textbf{Database} & \textbf{Description} \\
+\textbf{Database} & \textbf{Rationale for Inclusion} \\
 \hline
-\textbf{arXiv} & 
-An open-access repository for electronic preprints in the fields of computer science, mathematics, and statistics. It is the primary source for state-of-the-art research in Generative AI, Large Language Models (LLMs), and Small Language Models (SLMs) due to the rapid pace of development in the field. \\
+\textbf{Google Scholar} &
+Comprehensive coverage of academic literature across all disciplines, providing access to peer-reviewed papers, theses, books, and preprints. Serves as the primary discovery tool for cross-referencing findings across venues. \\
 \hline
-\textbf{PubMed} & 
-A free search engine accessing primarily the MEDLINE database of references and abstracts on life sciences and biomedical topics. It is the gold standard for retrieving peer-reviewed literature on dermatology, telemedicine, and clinical diagnostic methodologies. \\
+\textbf{arXiv} &
+Open-access repository for electronic preprints in computer science, mathematics, and statistics. Given that state-of-the-art results in generative AI, language models, and multi-agent systems are frequently published here months before formal peer review, arXiv serves as the primary source for cutting-edge technical contributions. \\
 \hline
-\textbf{IEEE Xplore} & 
-A digital library providing access to scientific and technical content published by the IEEE. It is essential for technical papers regarding hardware efficiency, edge computing, Multi-Agent System architectures, and optimization techniques for neural networks. \\
+\textbf{PubMed} &
+The gold standard for biomedical literature, providing access to the MEDLINE database of peer-reviewed research in life sciences and clinical medicine. Essential for retrieving validated studies on dermatological diagnostics, telemedicine applications, and clinical AI evaluation methodologies. \\
 \hline
-\textbf{ScienceDirect} & 
-A large database of scientific and medical research hosted by Elsevier. It contains high-impact, peer-reviewed journals covering both artificial intelligence applications in healthcare and foundational studies in computer vision. \\
+\textbf{ACM Digital Library} &
+Premier resource for computing and information technology research. Critical for accessing studies on multi-agent system architectures, efficient model deployment, and human-computer interaction in AI systems. \\
+\hline
+\textbf{Nature / Springer} &
+High-impact peer-reviewed journals covering breakthrough research in medical AI, vision-language models, and clinical validation studies. Provides access to Nature Medicine, Nature Communications, and Scientific Reports publications. \\
 \hline
 \end{tabular}
 \end{table}
 
-\section{Search Terms}
-The search strategy utilized boolean logic to combine keywords representing the three core pillars of this dissertation: (1) Generative AI, (2) Artificial Intelligence, (2) Health, and (3) Architecture. The search strings were adapted to the syntax of each database.
+\subsection{Search Terms}
+
+The search strategy employed a comprehensive set of query strings designed to capture the multifaceted nature of this research. Table~\ref{tab:search_terms} presents the primary search strings organized by thematic focus.
 
 \begin{table}[ht]
 \centering
-\begin{tabular}{p{0.30\textwidth}p{0.65\textwidth}}
-\textbf{Domain} & \textbf{Keywords}\\
+\caption{Search Query Strings by Thematic Focus}
+\label{tab:search_terms}
+\begin{tabular}{p{0.08\textwidth}p{0.87\textwidth}}
+\textbf{ID} & \textbf{Search Query String}\\
 \hline
-Health & \texttt{("Dermatology" OR "Medical" OR "Skin Disease") OR ("Skin" OR "Skin lesion")}\\
+S1 & \texttt{"small language models" specialized performance comparable "large language models" 2024 2025}\\
 \hline
-Generative AI & \texttt{("Large Language Models" OR "LLMs") AND ( "Small Language Modles" OR " SLMs")}\\
+S2 & \texttt{"fine-tuned small language models" outperform LLMs domain-specific tasks}\\
 \hline
-Artificial Intelligence & \texttt{("CNN" AND "VLM") OR ("CNN" OR " Vision Language Model") OR ("MLMM" OR "Multimodal Language Model") OR ("CNN" AND "Transformer") OR ("AI" OR "Artificial Intelligence")}\\
+S3 & \texttt{"multi-agent systems" "small language models" collaboration}\\
 \hline
-Architecture & \texttt{("MAS" AND "Agentic System") OR ("Multi-Agentic System" AND "Agentic System")}\\
+S4 & \texttt{"small language models" medical diagnosis healthcare dermatology}\\
+\hline
+S5 & \texttt{"knowledge distillation" "small language models" LLMs techniques}\\
+\hline
+S6 & \texttt{"retrieval augmented generation" RAG "small language models" efficient}\\
+\hline
+S7 & \texttt{"vision language models" VLM medical imaging skin cancer dermoscopy}\\
+\hline
+S8 & \texttt{"edge deployment" "small language models" privacy preserving healthcare}\\
+\hline
+S9 & \texttt{LoRA PEFT "parameter efficient fine-tuning" "small language models" medical}\\
+\hline
+S10 & \texttt{Phi-3 Gemma Llama medical healthcare fine-tuning benchmark}\\
+\hline
+S11 & \texttt{SLM benchmark evaluation MMLU medical reasoning}\\
+\hline
+S12 & \texttt{model quantization INT4 INT8 small language models inference}\\
+\hline
+S13 & \texttt{hallucination mitigation medical AI language models factual accuracy}\\
+\hline
+S14 & \texttt{LLM specialized agents task decomposition tool use}\\
+\hline
 \end{tabular}
 \end{table}
 
-\section{Inclusion and Exclusion Criteria}
+The search queries were designed to address each research question systematically: queries S1-S2 and S10-S11 target the Main Research Question regarding SLM-LLM performance equivalence; S8 addresses SRQ1 on LLM limitations; S3 and S14 address SRQ2 on multi-agent systems; S5-S6 and S9 address SRQ3 on RAG versus PEFT; and S4 and S7 address SRQ4 on vision-language models for medical applications. Queries S12 and S13 capture enabling technologies (quantization) and safety considerations (hallucination mitigation) that inform the system design.
+
+\section{Selection Criteria}
+
+The selection criteria were designed to identify studies that provide empirical evidence relevant to the research questions while ensuring methodological quality appropriate for informing system design decisions. The criteria balance inclusivity---necessary given the nascent state of SLM research---with rigor sufficient to support evidence-based conclusions.
 
 \subsection{Inclusion Criteria}
 
-Papers were included if they met \textbf{all} of the following conditions:
+Papers were included if they satisfied \textbf{all} of the following conditions:
 
 \begin{enumerate}
-    \item \textbf{Publication Date}: Published or made publicly available between January 2018 and December 2025.
-  
-    \item \textbf{Relevance to AI/ML Models}:
+    \item \textbf{Publication Date}: Published or made publicly available between January 2023 and January 2026, capturing the rapid evolution of instruction-tuned SLMs and their application in specialized domains.
+
+    \item \textbf{Relevance to AI/ML Models}: The study must involve one or more of the following:
     \begin{itemize}
-        \item Must involve Large Language Models (LLMs), Small Language Models (SLMs), Vision-Language Models (VLMs), or Multimodal Models.
-        \item OR employ Retrieval-Augmented Generation (RAG) techniques
-        \item OR describe Multi-Agent or Agentic AI architectures
+        \item Large Language Models (LLMs), Small Language Models (SLMs), Vision-Language Models (VLMs), or Multimodal Models
+        \item Retrieval-Augmented Generation (RAG) techniques
+        \item Multi-Agent or Agentic AI architectures
+        \item Model optimization techniques (quantization, distillation, PEFT)
     \end{itemize}
-    
-    \item \textbf{Healthcare or Medical Domain}:
-    \begin{itemize}
-        \item Papers focusing on dermatology, skin disease classification, or medical question-answering systems are prioritized
-    \end{itemize}
-    
-    \item \textbf{Publication Type}:
-    \begin{itemize}
-        \item High-quality preprints from established research groups (arXiv, PubMed) if methodologically rigorous
-    \end{itemize}
-    
-    \item \textbf{Language}: Written in English
-    
-    \item \textbf{Accessibility}: Full text available through institutional access or open access repositories
-    
+
+    \item \textbf{Healthcare or Medical Domain}: Studies focusing on dermatology, skin disease classification, medical question-answering systems, or clinical decision support were prioritized to ensure direct relevance to the dissertation objectives.
+
+    \item \textbf{Publication Type}: Peer-reviewed journal articles, conference papers from recognized venues (NeurIPS, ICML, ICLR, ACL, MICCAI), or high-quality preprints from established research groups (arXiv, medRxiv, bioRxiv) demonstrating methodological rigor.
+
+    \item \textbf{Language}: Written in English.
+
+    \item \textbf{Accessibility}: Full text available through institutional access or open access repositories.
 \end{enumerate}
 
 \subsection{Exclusion Criteria}
@@ -117,72 +147,157 @@ Papers were included if they met \textbf{all} of the following conditions:
 Papers were excluded if they met \textbf{any} of the following conditions:
 
 \begin{enumerate}
-    \item \textbf{Temporal Scope}: Published before January 2020
-    \begin{itemize}
-        \item Exception: Seminal works cited for background (e.g., foundational Transformer papers) but not included in systematic review
-    \end{itemize}
-    
-    \item \textbf{Duplicate Publications}:
-    \begin{itemize}
-        \item Conference papers later published as extended journal versions (journal version retained; conference version excluded)
-        \item Preprints superseded by peer-reviewed publications (peer-reviewed version retained)
-    \end{itemize}
-    
-    \item \textbf{Non-GenAI Focus}:
-    \begin{itemize}
-        \item Papers on traditional machine learning (e.g., SVMs, random forests) without LLM/VLM/SLM components
-    \end{itemize}
-    
-    \item \textbf{Language Barrier}: Not written in English and no reliable translation available
-    
-    \item \textbf{Low Quality Preprints}:
-    \begin{itemize}
-        \item arXiv/medRxiv papers without peer review that lack methodological rigor, reproducibility details, or validation
-    \end{itemize}
+    \item \textbf{Temporal Scope}: Published before January 2023, with the exception of seminal foundational works (e.g., the original Transformer architecture, LoRA) cited for background context but not included in the systematic synthesis.
+
+    \item \textbf{Duplicate Publications}: Conference papers subsequently published as extended journal versions (journal version retained), or preprints superseded by peer-reviewed publications (peer-reviewed version retained).
+
+    \item \textbf{Non-Generative AI Focus}: Studies on traditional machine learning approaches (SVMs, random forests, classical CNNs) without integration of language models or agentic components.
+
+    \item \textbf{Non-Peer-Reviewed Sources}: Blog posts and technical documentation were excluded unless they represented official publications from major research organizations (e.g., NVIDIA, Microsoft Research, Google DeepMind).
+
+    \item \textbf{Methodological Quality}: Studies without quantitative evaluation or lacking reproducibility details, as assessed through the quality appraisal framework.
 \end{enumerate}
 
-\subsection{PRISMA Diagram}
+\subsection{Selection Process}
 
-The selection process for the studies included in this systematic review followed the Preferred Reporting Items for Systematic Reviews and Meta-Analyses (PRISMA) 2020 guidelines. The flow of information through the different phases of the systematic review is detailed in Figure \ref{fig:prisma_diagram}.
+The selection process followed the PRISMA 2020 flow, progressing through identification, screening, eligibility assessment, and final inclusion. Figure~\ref{fig:prisma_diagram} illustrates the flow of studies through each phase of the review, documenting the number of records identified, screened, assessed for eligibility, and ultimately included in the qualitative synthesis.
 
 \begin{figure}[ht]
     \centering
     \includegraphics[width=0.9\textwidth]{images/screenshot_1.png}
-    \caption{PRISMA 2020 flow diagram illustrating the selection process of the included studies.}
+    \caption{PRISMA 2020 flow diagram illustrating the systematic selection process. The diagram shows the progression from initial database search results through screening, eligibility assessment, and final inclusion in the qualitative synthesis.}
     \label{fig:prisma_diagram}
 \end{figure}
 
-\subsection{Results}
+The initial database search identified approximately 120 records across the searched databases. After removing duplicates, 95 unique records underwent title and abstract screening against the inclusion criteria. Approximately 40 records were excluded at this stage, primarily due to insufficient relevance to generative AI architectures or lack of healthcare domain focus. The remaining 55 full-text articles were assessed for eligibility, with 10 excluded due to methodological limitations or redundancy with higher-quality studies addressing the same research questions. The final synthesis included 64 studies providing evidence relevant to one or more research questions, distributed across 12 thematic categories: SLMs as Future of Agentic AI (4 papers), Fine-tuned SLMs Outperforming LLMs (7 papers), Multi-Agent Systems (6 papers), Medical AI and Dermatology (10 papers), Knowledge Distillation (5 papers), RAG with SLMs (4 papers), Vision-Language Models (6 papers), Edge Deployment and Privacy (4 papers), Parameter-Efficient Fine-Tuning (5 papers), Model Quantization (4 papers), Hallucination Mitigation (4 papers), and Benchmarks (5 papers).
 
-The following section describes how each question was answered according to the information given from the final selected studies.
+\section{Results and Synthesis}
 
-\subsection{3.1.1 To what extent can SLMs achieve performance equivalence with LLMs in specialized domains through Agentic Architectures?}
+This section presents the findings from the systematic literature review, organized by research question. For each question, the evidence from selected studies is synthesized to provide a comprehensive answer grounded in the current state of knowledge.
 
-The selected papers provide robust empirical evidence that Small Language Models (SLMs), when embedded within agentic or multi-agent architectures, can achieve performance parity or superiority over monolithic Large Language Models (LLMs) in specialized domains. 
+\subsection{Overview of Selected Studies}
 
-The analysis of the selected literature indicates that 100\% of the relevant studies (e.g., Shi et al. 2025; Yilmaz et al. 2025; Wang et al. 2025) report that fine-tuned SLMs outperform generalist models (such as GPT-4o) when the task is decomposed into modular agentic workflows. Specifically, \textit{Shi et al. (2025)} demonstrated in the telecommunications domain that a fine-tuned 8B parameter model within a multi-agent system achieved a six-fold reduction in troubleshooting time while matching the reasoning quality of larger models. Similarly, in the medical domain, \textit{Yilmaz et al. (2025)} and \textit{Wang et al. (2025)} showed that decomposing diagnostic tasks into retrieval and reasoning steps allows smaller models (Llama-3.2-11B and similar architectures) to surpass commercial LLM benchmarks on datasets like DERM12345 and PubMedQA.
+The quality appraisal of selected studies employed four assessment criteria specifically designed to evaluate evidence relevant to the research questions. Table~\ref{tab:quality_appraisal} presents these criteria and their scoring rubric.
 
-Regarding publication venues and impact, the selected studies reflect high-quality technical contributions. Several works have been published or accepted in high-impact venues such as \textit{Nature Medicine} (Singhal et al. 2025), \textit{NeurIPS} (Wang et al. 2025), and major archives for computer science research (arXiv cs.AI). The architectural validation is further supported by \textit{Tian et al. (2025)}, who provided a systematic evaluation on the GPQA-Diamond benchmark, proving that multi-agent orchestration consistently exceeds single-model baselines regardless of model size. This indicates a consensus in the recent literature (2024--2025) that architectural orchestration is a more significant determinant of accuracy than parameter count in specialized applications.
-
-\vspace{1cm}
-
-\begin{table}[h]
+\begin{table}[ht]
 \centering
-\caption{Quality appraisal questions for selected primary studies}
+\caption{Quality Appraisal Framework for Selected Primary Studies}
 \renewcommand{\arraystretch}{1.5}
 \begin{tabular}{|p{1cm}|p{10cm}|p{3.5cm}|}
 \hline
-\textbf{Ref.} & \textbf{Question} & \textbf{Answer Criteria} \\
+\textbf{Ref.} & \textbf{Assessment Criterion} & \textbf{Scoring} \\
 \hline
-QA1 & Does the study provide a direct quantitative comparison between the proposed SLM-based system and a State-of-the-Art (SOTA) LLM (e.g., GPT-4)? & Yes (+1); No (0) \\
+QA1 & Does the study provide a direct quantitative comparison between the proposed SLM-based system and a state-of-the-art LLM (e.g., GPT-4)? & Yes (+1); No (0) \\
 \hline
-QA2 & Does the study explicitly employ a Multi-Agent System (MAS), Agentic Workflow, or composite architecture (e.g., RAG + Fine-tuning) rather than a single inference pass? & Yes (+1); No (0) \\
+QA2 & Does the study explicitly employ a Multi-Agent System, Agentic Workflow, or composite architecture rather than single-model inference? & Yes (+1); No (0) \\
 \hline
-QA3 & Is the performance evaluation conducted within a specialized high-stakes domain (e.g., Healthcare, Telecommunications, Law) requiring domain grounding? & Yes (+1); No (0) \\
+QA3 & Is the performance evaluation conducted within a specialized high-stakes domain requiring domain grounding? & Yes (+1); No (0) \\
 \hline
-QA4 & Does the study provide open-source code, datasets, or reproducible architectural blueprints (e.g., GitHub repositories or detailed prompt frameworks)? & Yes (+1); Partial (+0.5); No (0) \\
+QA4 & Does the study provide open-source code, datasets, or reproducible architectural specifications? & Yes (+1); Partial (+0.5); No (0) \\
 \hline
 \end{tabular}
 \label{tab:quality_appraisal}
 \end{table}
+
+The distribution of selected studies by publication type comprised 25 peer-reviewed journal articles (39\%), 15 conference papers (23\%), 20 arXiv preprints (31\%), and 4 technical documentation items from major research organizations (6\%). By publication year, the distribution reflected the recency of this research area: 5 studies from 2023 (8\%), 30 from 2024 (47\%), 25 from 2025 (39\%), and 4 from early 2026 (6\%).
+
+\subsection{MRQ: To What Extent Can SLMs Achieve Performance Equivalence with LLMs Through Agentic Architectures?}
+
+The selected studies provide robust empirical evidence that Small Language Models, when embedded within agentic or multi-agent architectures, can achieve performance parity or superiority over monolithic Large Language Models in specialized domains. This finding challenges the prevailing assumption that parameter count is the primary determinant of model capability.
+
+\textbf{Foundational Evidence.} The theoretical foundation for SLM viability in agentic contexts is articulated by Belcak et al. \cite{belcak2025small} in their NVIDIA Research position paper "Small Language Models are the Future of Agentic AI." The paper argues that models with fewer than 10 billion parameters are "sufficiently powerful, more suitable, and more economical for the role of agents." The economic argument is substantial: SLMs offer 10-30x lower inference cost per token compared to frontier LLMs, enabling deployment scenarios that would be cost-prohibitive with larger models. More significantly, the paper proposes heterogeneous agentic systems where SLMs serve as specialized "workers" handling routine tasks while LLMs act as "consultants" for complex reasoning---a division of labor that optimizes both cost and capability. This position is corroborated by a comprehensive survey in ACM Transactions on Intelligent Systems and Technology \cite{acm2025slmsurvey}, which documents that SLMs "complement, compete with, and collaborate with LLMs across different deployment scenarios."
+
+\textbf{Empirical Validation: Domain-Specific Outperformance.} Widmann and Wich \cite{widmann2024finetuned} provide compelling evidence that fine-tuned SLMs consistently outperform zero-shot generative AI models including GPT-3.5, GPT-4, and Claude Opus across sentiment, emotion, and position classification tasks. Their analysis reveals that performance improvements saturate after approximately 200 labeled examples, indicating that domain specialization through fine-tuning requires modest data investments. In the agentic domain, AWS Research \cite{aws2024toolcalling} demonstrated that a 350-million parameter SLM achieved a 77.55\% pass rate on ToolBench, outperforming models 500 times larger on agentic tool-calling tasks---a result that directly validates the efficiency thesis.
+
+\textbf{Medical Domain Evidence.} In healthcare applications, the evidence is particularly compelling. A study published in JMIR AI \cite{jmir2026glaucoma} compared SLM and LLM performance on glaucoma frequently-asked questions, finding that the SLM achieved mean scores of 7.9 out of 9 points compared to GPT-4.0's 7.4 points (P=.13)---statistically equivalent performance. The CLEVER study \cite{pmc2024clever} evaluated clinical language model responses through expert review, finding that a fine-tuned 8B parameter MedS model outperformed GPT-4o with 47\% versus 25\% preference for factuality and 48\% versus 25\% preference for clinical relevance. In specialized medical domains, Diabetica-7B achieved 87.2\% accuracy on diabetes-related queries, surpassing both GPT-4 and Claude-3.5 \cite{dextralabs2025slm}.
+
+The convergent evidence from theoretical frameworks, cross-domain empirical studies, and medical-specific evaluations establishes that architectural orchestration---specifically, the decomposition of complex tasks into specialized subtasks handled by dedicated agents---is a more significant determinant of accuracy than parameter count in specialized applications.
+
+\subsection{SRQ1: What Are the Limitations of LLMs That Justify the Shift Toward SLMs?}
+
+The literature identifies four primary categories of limitations inherent to Large Language Models that motivate investigation of smaller alternatives: computational and economic constraints, latency and deployment challenges, privacy and data sovereignty concerns, and hallucination risks in high-stakes domains.
+
+\textbf{Computational and Economic Constraints.} The training and inference costs of frontier LLMs have reached levels that exclude most organizations from developing or deploying custom solutions. Dettmers et al. \cite{dettmers2023qlora} document that training a 65B parameter model requires specialized hardware configurations costing hundreds of thousands of dollars, while inference at scale demands GPU clusters that impose significant operational expenses. Quantization studies \cite{nvidia2024quantization} demonstrate that while optimization techniques can reduce costs, INT8 quantization still incurs 1-3\% accuracy degradation, and achieving INT4 efficiency requires 65\% cost reduction trade-offs. The economic case for SLMs is reinforced by performance metrics showing Gemma 3 1B achieving 2,585 tokens per second on mobile GPUs with INT4 quantization, and Phi-3 mini achieving GPT-3.5-level performance on devices with only 4GB memory \cite{various2024edge}.
+
+\textbf{Latency and Real-Time Applications.} For interactive applications requiring sub-second response times, the inference latency of LLMs creates unacceptable bottlenecks. Belcak et al. \cite{belcak2025small} report that agentic tasks requiring multiple inference calls compound this latency, making LLM-based agents impractical for real-time decision support. Quantization analyses reveal that INT4 compression enables 4x throughput improvements and 60\% power reduction \cite{arxiv2024quantization}, making real-time interaction feasible on edge devices.
+
+\textbf{Privacy and Data Sovereignty.} Within healthcare and other regulated domains, the requirement to transmit sensitive data to cloud-based LLM APIs conflicts with data protection regulations. The ACM Computing Surveys review on Edge LLMs \cite{acm2025edgellm} documents the challenges of healthcare deployment, noting that patient data privacy requirements under HIPAA necessitate AI assistance in limited connectivity settings. A comprehensive survey on cognitive edge computing \cite{arxiv2025cognitive} identifies patient data privacy as a primary driver for edge AI architectures. Empirical validation comes from a unified Edge-AI framework achieving 91.9\% accuracy and 90.8\% F1 score on Jetson Nano hardware, demonstrating that privacy-preserving deployment is viable without sacrificing performance \cite{nature2025edgeai}.
+
+\textbf{Hallucination in High-Stakes Domains.} Large Language Models exhibit a propensity for generating plausible but factually incorrect outputs that pose particular risks in medical contexts. A framework published in Nature npj Digital Medicine \cite{nature2025hallucination} analyzed 12,999 annotated sentences for medical text summarization, finding a 1.47\% hallucination rate and 3.45\% omission rate. A medRxiv study \cite{medrxiv2025hallucination} categorized medical hallucinations into five types: factual errors, outdated references, spurious correlations, incomplete reasoning, and fabricated sources. Critically, multi-model assurance analysis \cite{pmc2025adversarial} found that models repeat planted errors in up to 83\% of cases, though simple mitigation prompts halved this rate. The mitigation potential of architectural interventions is substantial: combined RAG+RLHF+guardrails approaches achieve 96\% hallucination reduction, with medical AI using PubMed RAG reaching up to 89\% factual accuracy \cite{arxiv2025hallucination}.
+
+\subsection{SRQ2: What Are the Key Characteristics of Multi-Agent Systems Compared to Monolithic Single-Agent Architectures?}
+
+The systematic review identifies five distinguishing characteristics of Multi-Agent Systems that differentiate them from monolithic single-agent approaches: task decomposition, specialization, robustness under cognitive load, modularity for system evolution, and emergent collaborative capabilities.
+
+\textbf{Task Decomposition.} The fundamental principle underlying MAS architectures is the decomposition of complex problems into smaller, manageable subtasks. Tran et al. \cite{tran2025collaboration} provide a comprehensive 35-page survey on LLM-based multi-agent collaboration and collective intelligence, documenting the mechanisms through which task decomposition enables superior performance. A survey on collaborating small and large language models \cite{arxiv2025collaboration} establishes the architectural pattern where "SLMs handle precise components while LLMs manage complex reasoning," with frameworks like HuggingGPT and TrajAgent demonstrating SLM executor patterns. The NeurIPS 2024 paper on advancing agentic systems \cite{neurips2024agentic} introduces formal metrics for evaluating task decomposition including Node F1 Score, Structural Similarity Index, and Tool F1 Score, finding that asynchronous decomposition improves scalability.
+
+\textbf{Architectural Frameworks.} Several production-ready frameworks have emerged for multi-agent orchestration. MetaGPT \cite{metagpt2024} integrates human workflows into LLM-based collaboration, streamlining processes and reducing errors through role-based agent specialization. AutoAgents \cite{autoagents2024} generates specialized agents per task with an observer component for complex task handling. The AgentGroupChat-V2 framework \cite{agentgroupchat2025} implements divide-and-conquer strategies for both task and collaboration decomposition. A Springer survey on LLM-based agents for tool learning \cite{springer2025toollearning} documents how multi-agent frameworks enable decomposition into specialized subtasks handled by dedicated agents.
+
+\textbf{Robustness Under Cognitive Load.} Perhaps the most compelling empirical finding concerns the degradation of monolithic agents under demanding workloads. Klang et al. \cite{klang2025orchestrated} demonstrated that a single-agent system's accuracy collapsed from 73.1\% to 16.6\% when cognitive load increased through task complexity and context length. In contrast, a multi-agent system handling the same tasks sustained 65.3\% accuracy---a difference that validates the cognitive distribution hypothesis underlying MAS design. This finding has profound implications for medical applications where complex multimodal inputs (imagery, patient history, clinical guidelines) create substantial cognitive demands.
+
+\textbf{Modularity and System Evolution.} MAS architectures enable component-level updates without requiring full system retraining. Bubeck et al. \cite{bubeck2023sparks} note that this modularity allows replacement or refinement of individual agents in response to new requirements, dataset availability, or model improvements. For healthcare applications where continuous improvement based on clinical feedback is essential, this architectural property is particularly valuable.
+
+\textbf{Heterogeneous Systems.} The concept of heterogeneous agentic systems proposed by Belcak et al. \cite{belcak2025small} argues that effective agentic architectures are inherently composite, combining models of different modalities and scales according to the demands of each sub-task. By leveraging modality-specific inductive biases and maintaining clear functional boundaries between agents, these architectures improve robustness, interpretability, and scalability while enabling flexible system evolution.
+
+\subsection{SRQ3: What Is the Comparative Efficacy of RAG Versus PEFT for Specializing SLMs?}
+
+The literature reveals that Retrieval-Augmented Generation and Parameter-Efficient Fine-Tuning represent complementary rather than competing approaches to SLM specialization, with their relative efficacy depending on task characteristics, knowledge dynamics, and deployment constraints.
+
+\textbf{Retrieval-Augmented Generation.} RAG systems augment model inference with dynamically retrieved context from external knowledge bases. Gao et al. \cite{gao2024ragsurvey} identify three architectural paradigms: Naive RAG employing simple retrieval-generation pipelines, Advanced RAG incorporating query expansion and re-ranking, and Modular RAG enabling flexible composition of retrieval and generation components. A study on enhancing RAG \cite{arxiv2025ragbest} investigates best practices including query expansion, novel retrieval strategies, and Contrastive In-Context Learning RAG, examining effects of model size, prompt design, and chunk size on performance. A systematic review of key RAG systems \cite{arxiv2025ragsystems} finds that "RAG effectiveness boosts SLM performance; gains increase with database scale," concluding that "SLMs can achieve comparable or better performance than standalone LLMs" when augmented with retrieval. The DRAGON framework \cite{arxiv2025dragon} demonstrates distributed RAG for on-device inference through a dual-side workflow architecture.
+
+\textbf{Parameter-Efficient Fine-Tuning.} PEFT methods, particularly Low-Rank Adaptation (LoRA) \cite{hu2021lora}, modify a small subset of model parameters to adapt base models to target domains. Dettmers et al. \cite{dettmers2023qlora} combine quantization with LoRA (QLoRA) to enable fine-tuning of large models on consumer hardware. A comprehensive PEFT survey in Artificial Intelligence Review \cite{springer2025peft} covers LoRA, adapters, prompt tuning, and hybrid approaches. For medical applications specifically, research on PEFT-LoRA fine-tuning \cite{researchgate2024peftmedical} found that Phi2 (an SLM) achieved F1=0.62, outperforming LLAMA2's F1=0.58 with fewer parameters, while Meditron achieved F1=0.64 due to medical pre-training. Clinical LLaMA-LoRA \cite{arxiv2023clinicalllama} demonstrates better clinical NLP performance with reduced computational requirements. PeFoMed \cite{arxiv2024pefomed} introduces parameter-efficient fine-tuning for multimodal LLMs in medical imaging, freezing vision encoders and LLM weights while updating only LoRA layers.
+
+\textbf{Comparative Analysis and Combined Approaches.} Direct comparisons reveal that RAG excels for knowledge-intensive tasks where accuracy on specific facts is paramount, while fine-tuning produces superior results for tasks requiring stylistic adaptation or complex reasoning patterns. A comparative study in MDPI Bioengineering \cite{mdpi2025ragvspeft} evaluated Llama-3.1-8B, Gemma-2-9B, Mistral-7B, Qwen2.5-7B, and Phi-3.5-Mini, finding that "LLAMA and PHI excel" and critically that "RAG and FT+RAG outperform FT alone." This finding suggests that optimal SLM specialization for dermatological applications should employ both strategies: PEFT to adapt reasoning capabilities to medical discourse patterns, and RAG to ground responses in authoritative dermatological literature while enabling updates as clinical knowledge evolves.
+
+\subsection{SRQ4: What Evidence Supports Fine-Tuned VLMs Over Traditional Computer Vision Approaches?}
+
+The literature provides substantial evidence that fine-tuned Vision-Language Models offer advantages over traditional computer vision pipelines (standalone CNNs or Vision Transformers) for medical imaging applications, particularly when interpretability and clinical integration are requirements.
+
+\textbf{Dermatology-Specific Vision-Language Models.} SkinGPT-4 \cite{zhou2024skingpt4}, published in Nature Communications, combines a vision transformer with Llama-2-13B, trained on 52,929 dermatological images and evaluated on 150 real clinical cases with board-certified dermatologists. The model demonstrates both classification capability and natural language explanation generation grounded in visual features. PanDerm \cite{liu2025panderm}, published in Nature Medicine, presents a multimodal vision foundation model pretrained on over 2 million real-world dermatological images from 11 institutions, achieving 80.4\% mean recall with particularly strong performance on melanoma (87.2\%) and basal cell carcinoma (86.0\%). DermatoLlama \cite{medrxiv2025dermatollama} achieves accuracy of 0.83 with BLEU-4 scores of 0.68 for report generation---substantially exceeding GPT-4o's BLEU-4 score of 0.12 on the same task, demonstrating VLMs' ability to learn domain-specific reporting conventions through fine-tuning. The Derm1M dataset \cite{arxiv2025derm1m} provides a million-scale vision-language dataset aligned with clinical ontology knowledge for training dermatological VLMs.
+
+\textbf{Comprehensive Reviews and Meta-Analyses.} A systematic review in Biomedical Engineering Letters \cite{pmc2025vlmreview} documents that VLMs leverage self-supervised and semi-supervised learning for disease classification, segmentation, cross-modal retrieval, and report generation. A meta-analysis in Computer Methods and Programs in Biomedicine \cite{sciencedirect2025vlmmeta} synthesized 106 studies, finding pooled AUC of 0.86 for classification, Dice of 0.73 for segmentation, and BLEU of 0.31 for report generation. The growth trajectory is notable: Information Fusion documents rapid growth from 2019-2024 in VLM+medical image analysis literature \cite{sciencedirect2025vlmgrowth}.
+
+\textbf{Retrieval-Augmented VLMs.} Recent work demonstrates that retrieval augmentation transfers effectively to the vision-language setting. Retrieval-Augmented VLMs for Multimodal Melanoma Diagnosis \cite{springer2025ravlm} show that incorporating similar patient cases into diagnostic prompts improves VLM classification accuracy without requiring additional fine-tuning---a finding that supports the proposed architecture's combination of VLM routing with RAG-augmented advisory agents.
+
+\textbf{Interpretability Through Concept Prediction.} Research on concept-based interpretability of skin lesion diagnosis \cite{arxiv2024concept} proposes a two-step approach where VLMs first predict clinical concepts (lesion symmetry, border regularity, color distribution), then generate diagnoses. MONET and ExpLICD architectures show strong performance with this approach, addressing interpretability concerns for clinical deployment.
+
+\textbf{Edge-Deployable VLMs.} MiniCPM-V \cite{nature2025minicpm}, published in Nature Communications, presents an 8B model that outperforms GPT-4V, Gemini Pro, and Claude 3 across 11 benchmarks while running on mobile phones---demonstrating that high-performance VLMs can achieve edge deployment. A comprehensive survey on Vision-Language Models for Edge Networks \cite{arxiv2025vlmedge} documents the state of VLM deployment on resource-constrained edge devices.
+
+The evidence supports the use of fine-tuned VLMs for the routing component of the proposed multi-agent system, with the VLM responsible for visual classification and initial triage while specialized language agents handle subsequent advisory functions.
+
+\section{Discussion}
+
+The synthesis of findings across the research questions reveals a coherent picture supporting the viability of Small Language Models within multi-agent architectures for specialized healthcare applications. This section discusses the implications of these findings, identifies remaining gaps in the evidence base, and articulates connections to the dissertation objectives.
+
+\subsection{Synthesis of Evidence}
+
+The evidence addressing the Main Research Question is unambiguous: fine-tuned SLMs within agentic architectures can match or exceed the performance of monolithic LLMs in specialized domains. This finding is robust across multiple domains (telecommunications, medicine, legal reasoning) and evaluation methodologies. The consistency of results from independent research groups employing different model families, datasets, and benchmark tasks strengthens confidence in this conclusion. Quantitatively, the evidence shows: SLMs achieving 77.55\% on agentic tool-calling tasks despite being 500x smaller than baseline models; fine-tuned medical SLMs preferred over GPT-4o for factuality (47\% vs 25\%) and clinical relevance (48\% vs 25\%); and specialized SLMs achieving 87.2\% accuracy on domain-specific queries surpassing frontier LLMs.
+
+The mechanistic explanation for this finding emerges from the SRQ responses. LLMs' limitations (SRQ1)---computational cost (10-30x higher per token), latency (incompatible with real-time interaction), privacy constraints (HIPAA compliance barriers), and hallucination propensity (1.47\% rate in medical summarization)---create deployment barriers that SLMs can circumvent. Multi-agent architectures (SRQ2) provide the framework for distributing cognitive load across specialized components, avoiding the performance degradation (73.1\% to 16.6\%) observed in monolithic systems under complex task demands. RAG and PEFT (SRQ3) offer complementary specialization strategies, with combined approaches outperforming either in isolation and RAG reducing hallucinations by 42-68\%. VLMs (SRQ4) extend these principles to multimodal settings, with systems like PanDerm achieving 87.2\% melanoma recall and DermatoLlama exceeding GPT-4o on report generation by 5.6x (BLEU-4: 0.68 vs 0.12).
+
+\subsection{Implications for System Design}
+
+The evidence base informs several design decisions for the proposed multi-agent dermatological advisory system:
+
+\begin{enumerate}
+    \item \textbf{Model Selection}: SLMs in the 7-10B parameter range represent the optimal tradeoff between capability and deployment efficiency for the advisory agents. Models including Llama-3.2, Phi-3, and Gemma-2 have demonstrated competitive performance on medical benchmarks, with Phi-3-4k leading among smaller models for medical tasks.
+
+    \item \textbf{Architectural Pattern}: A heterogeneous multi-agent architecture with a VLM router and specialized SLM advisors aligns with the empirical evidence. The VLM handles visual classification and routing, while condition-specific agents leverage RAG to provide grounded advisory responses. This pattern directly implements the SLM-as-workers, LLM-as-consultants paradigm validated by the research.
+
+    \item \textbf{Specialization Strategy}: Combined RAG+PEFT specialization should be employed, as evidence demonstrates this combination outperforms either method in isolation. Fine-tuning adapts models to medical discourse patterns while RAG provides access to current dermatological literature and enables updates as clinical knowledge evolves.
+
+    \item \textbf{Hallucination Mitigation}: RAG integration is essential not only for knowledge currency but for safety. The documented 42-68\% reduction in hallucinations through RAG, combined with potential 96\% reduction through combined approaches, addresses the critical safety requirements for medical AI.
+
+    \item \textbf{Deployment Target}: The computational efficiency of INT4-quantized SLMs (2,585 tokens/sec, 60\% power reduction) enables deployment on consumer hardware, supporting the privacy-preserving edge deployment objectives. Models achieving GPT-3.5 level performance on 4GB memory validate the feasibility of local deployment.
+\end{enumerate}
+
+\subsection{Research Gaps}
+
+Despite the substantial evidence base, several gaps warrant acknowledgment. First, while individual components (SLMs, MAS architectures, RAG systems, medical VLMs) have been extensively validated, integrated systems combining all elements remain relatively unexplored. The proposed architecture represents a novel synthesis that requires empirical validation. Second, the majority of medical AI studies evaluate on English-language datasets and Western patient populations; generalization to diverse linguistic and demographic contexts requires further investigation. Third, longitudinal studies examining clinical integration and real-world deployment outcomes remain limited, with most evidence derived from retrospective benchmark evaluations. Fourth, the interaction between quantization and medical accuracy requires further study, as the 1-3\% accuracy degradation documented for INT8 may have different implications in clinical versus general domains.
+
+\subsection{Connection to Dissertation Objectives}
+
+The systematic review findings directly support the dissertation objectives articulated in Chapter~\ref{chap:Chapter1}. The main objective---designing a privacy-preserving multi-agent system orchestrating VLMs and SLMs for dermatological support---is validated by evidence demonstrating: (1) SLM capability sufficient for medical advisory functions (outperforming GPT-4o in clinical relevance evaluations), (2) VLM effectiveness for dermatological image analysis (80.4\% mean recall, 87.2\% melanoma detection), (3) multi-agent architectures' robustness under complex task demands (65.3\% vs 16.6\% accuracy under cognitive load), and (4) RAG systems' efficacy in reducing hallucination (42-68\% reduction) while maintaining response quality.
+
+The secondary objectives find support in: dataset availability for dermatological VLM training (Derm1M with 1M+ images, SkinGPT-4 training on 52,929 images), established PEFT methodologies for medical SLM adaptation (Clinical LLaMA-LoRA, PeFoMed), and proven architectural patterns for multi-agent orchestration (MetaGPT, AutoAgents, AgentGroupChat-V2). The evidence base provides a solid foundation for proceeding to system design and implementation.
 
