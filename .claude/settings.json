@@ -1,0 +1,19 @@
+{
+  "skills": [
+    {
+      "name": "citation-management",
+      "path": "../PSGIA/.claude/citation-management/SKILL.md",
+      "description": "Comprehensive citation management for academic research. Search Google Scholar and PubMed for papers, extract accurate metadata, validate citations, and generate properly formatted BibTeX entries."
+    },
+    {
+      "name": "literature-review",
+      "path": "../PSGIA/.claude/literature-review/SKILL.md",
+      "description": "Conduct comprehensive, systematic literature reviews using multiple academic databases (PubMed, arXiv, bioRxiv, Semantic Scholar, etc.)."
+    },
+    {
+      "name": "scientific-writing",
+      "path": "../PSGIA/.claude/scientific-writing/SKILL.md",
+      "description": "Write scientific manuscripts in full paragraphs. IMRAD structure, citations (APA/AMA/Vancouver), figures/tables, reporting guidelines (CONSORT/STROBE/PRISMA)."
+    }
+  ]
+}

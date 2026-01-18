@@ -63,6 +63,16 @@ headsepline, % Uncomment to get a line under the header
 %\usepackage[style=alphabetic,sorting=none,backend=biber]{biblatex} % Bibtex backend with the alphabetic citation style (alphabetic citations, bibliography ordered by appearance)
 
 \usepackage{makecell}
+\usepackage{float} % Required for [H] figure placement specifier
+
+% Fix section header alignment - prevent numbers from hanging into margin
+\usepackage{titlesec}
+\titleformat{\section}
+  {\normalfont\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries}{\thesubsubsection}{1em}{}
 
 \addbibresource{mainbibliography.bib} % The filename of the bibliography
 
