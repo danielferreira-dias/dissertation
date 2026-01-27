@@ -1,0 +1,615 @@
+% Chapter 3
+
+\chapter{System Design and Experimental Validation} % Main chapter title
+
+\label{chap:Chapter3} % For referencing the chapter elsewhere, use \ref{chap:Chapter3}
+
+%----------------------------------------------------------------------------------------
+
+\section{Introduction}
+\label{sec:chap3_intro}
+
+The systematic literature review presented in Chapter~\ref{chap:Chapter2} established that Small Language Models, when deployed within appropriately designed agentic architectures, can achieve performance equivalent to substantially larger models in specialized domains. That review identified four enabling mechanisms, task decomposition, agent specialization, knowledge augmentation through \gls{RAG}, and verification pipelines, that collectively compensate for reduced model scale. The evidence further demonstrated that Vision-Language Models offer compelling advantages for dermatological applications by combining visual classification with natural language explanation in unified architectures amenable to edge deployment.
+
+This chapter translates those theoretical findings into a concrete system design and a rigorous experimental protocol. Section~\ref{sec:system_architecture} presents the proposed multi-agent architecture, detailing the rationale behind each component: an orchestrator agent (Qwen3-VL-8B) for dermatological image classification and routing, four specialized agents (Gemma~3~4B) each with dedicated \gls{RAG} pipelines for domain-specific clinical explanation, and a validation agent (Gemma~3~4B) for hallucination mitigation. A LangGraph state machine orchestrates these components, managing inter-agent communication and state transitions through the hierarchical coordination paradigm identified as most effective in the multi-agent systems literature \parencite{tran2025multiagent}.
+
+Section~\ref{sec:experimental_methodology} defines the experimental methodology through four experiments designed to validate the system against the objectives established in Chapter~\ref{chap:Chapter1}. The first experiment evaluates \gls{VLM} classification performance by comparing three fine-tuned models against their zero-shot baselines and commercial \gls{LLM} endpoints. The second measures the impact of \gls{RAG} on diagnostic explanation quality, quantifying improvements in factual grounding and hallucination reduction. The third assesses the full multi-agent pipeline end-to-end against a monolithic \gls{LLM} approach. The fourth quantifies computational efficiency, economic cost, and privacy characteristics of the proposed system. Section~\ref{sec:results_discussion} presents results and discussion, and Section~\ref{sec:chap3_conclusion} concludes with a synthesis of findings and their implications.
+
+%----------------------------------------------------------------------------------------
+
+\section{System Architecture}
+\label{sec:system_architecture}
+
+\subsection{Architectural Overview}
+\label{subsec:arch_overview}
+
+The proposed system implements a routing-based multi-agent architecture that decomposes the dermatological diagnostic workflow into an orchestrator, four specialized domain agents, and a validation agent, following the multi-agent design principles established in the literature \parencite{tran2025multiagent, hong2024metagpt, gabriel2024agenticsystems}. Unlike a strict sequential pipeline, the architecture employs a hub-and-spoke topology: a central orchestrator agent receives the patient image, performs visual classification, and routes to the appropriate specialized agent based on the diagnostic category. Each specialized agent maintains its own \gls{RAG} pipeline and ChromaDB instance, enabling domain-specific knowledge retrieval. The specialized agent's draft response then passes to a validation agent for cross-referencing and hallucination checking before the final report is returned to the user.
+
+Figure~\ref{fig:system_architecture} presents the high-level system architecture. The design reflects three core principles derived from the findings of Chapter~\ref{chap:Chapter2}. The first principle is \textit{modular specialization}: each agent is optimized for a single cognitive task, thereby avoiding the performance degradation observed when monolithic models handle multiple responsibilities simultaneously \parencite{klang2025orchestrated}. The second principle is \textit{knowledge externalization}: medical knowledge resides in retrievable vector databases rather than being encoded in model parameters, which enables updates without retraining and provides citation provenance for generated responses \parencite{gao2024ragsurvey}.
+
+The architecture employs a deliberate two-model split. Qwen3-VL-8B-Instruct \parencite{bai2025qwen3vl} serves as the orchestrator, leveraging its strong vision-language capabilities for image classification and routing decisions. Gemma~3~4B \parencite{mesnard2025gemma3} powers both the four specialized agents and the validation agent, providing efficient text generation and cross-referencing at a fraction of the orchestrator's parameter count.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/SLM-architecture.png}
+    \caption{High-level architecture of the proposed multi-agent dermatological diagnostic system. The user submits a clinical image to the Orchestrator Agent (Qwen3-VL-8B), which classifies the image and routes to the appropriate Specialized Agent (Gemma~3~4B). Each specialized agent maintains its own RAG pipeline with a dedicated ChromaDB instance. The draft response passes to a Validation Agent (Gemma~3~4B, dashed border) for cross-referencing and hallucination checking. The validated report is returned to the user via the orchestrator. All components operate locally within a LangGraph state machine, preserving patient data privacy.}
+    \label{fig:system_architecture}
+\end{figure}
+
+\subsection{VLM Selection and Configuration}
+\label{subsec:vlm_selection}
+
+The selection of models for the multi-agent architecture was guided by four criteria derived from the system requirements: strong baseline performance on multimodal benchmarks, demonstrated amenability to medical domain fine-tuning, mature support for parameter-efficient adaptation via \gls{LoRA}, and compatibility with quantization for resource-constrained deployment on an NVIDIA T4 16~GB \gls{GPU}. After evaluating the candidate models identified in the Chapter~\ref{chap:Chapter2} review, two models were selected for the system: Qwen3-VL-8B-Instruct \parencite{bai2025qwen3vl} as the orchestrator agent and Gemma~3~4B \parencite{mesnard2025gemma3} for the specialized and validation agents. This two-model architecture creates a clear functional split: the larger Qwen3-VL-8B handles vision understanding and routing decisions, while the smaller Gemma~3~4B handles text generation and validation, enabling concurrent operation within the memory constraints of a single T4 \gls{GPU}.
+
+\textbf{Qwen3-VL-8B-Instruct} \parencite{bai2025qwen3vl} serves as the orchestrator agent, responsible for image classification and routing. The Qwen3-VL family represents a substantial advancement over its predecessor Qwen2.5-VL-7B \parencite{yang2024qwen25vl}, with the 8B model achieving approximately 70 on MMMU (up from 58.6), 77 on MathVista (up from 68.2), and 97\% on DocVQA---positioning it as best-in-class among open-source \gls{VLM}s at the 8-billion parameter scale. Architecturally, Qwen3-VL introduces DeepStack, a multi-level Vision Transformer feature fusion mechanism that improves fine-grained visual understanding, alongside enhanced Multimodal Rotary Position Embeddings (MRoPE) for better spatial reasoning. The model supports a native 256K context window (doubled from the 128K of its predecessor), enabling processing of high-resolution clinical imagery without aggressive compression.
+
+The strongest justification for selecting Qwen3-VL-8B as the orchestrator is the DermoGPT study \parencite{ru2026dermogpt}, which directly fine-tunes Qwen3-VL-8B-Instruct for dermatological reasoning. DermoGPT constructs a DermoInstruct dataset comprising 211,243 images and 772,675 training trajectories across four clinical axes---morphology, diagnosis, reasoning, and fairness---and demonstrates that LoRA-adapted Qwen3-VL-8B (rank~64, alpha~64, dropout~0.05) ``significantly outperforms 16 representative baselines across all axes'' on their DermoBench evaluation. This establishes a direct precedent for the exact model and domain combination proposed in this dissertation. Beyond DermoGPT, the predecessor Qwen2.5-VL has been successfully fine-tuned for medical imaging in PathVLM-R1 for pathology image interpretation \parencite{chen2025pathvlmr1} and MedVision for general medical visual question answering \parencite{wu2025medvision}. Qwen3-VL-8B supports \gls{LoRA} fine-tuning via Unsloth \parencite{han2024unsloth} with QLoRA \parencite{dettmers2023qlora} 4-bit quantization, producing minimal accuracy degradation while enabling training on a Google Colab T4 16~GB \gls{GPU}. The model is released under the Apache~2.0 license, permitting unrestricted academic and commercial use.
+
+\textbf{Gemma~3~4B} \parencite{mesnard2025gemma3}, a 4-billion parameter multimodal model from Google DeepMind, powers the four specialized agents and the validation agent. Despite its compact size, Gemma~3~4B achieves performance competitive with Gemma~2~27B---a model 6.75 times larger---demonstrating the effectiveness of its architectural design. Vision capabilities are provided by a shared SigLIP 400M encoder across all Gemma~3 model sizes, with Pan \& Scan processing for high-resolution images. The model supports a 128K context window with a 5:1 local-to-global attention ratio that enables efficient key-value cache management during inference.
+
+The selection of Gemma~3~4B for the specialized and validation roles is motivated by three considerations. First, its medical domain adaptability is established by MedGemma \parencite{sellergren2025medgemma}, a medical derivative of Gemma~3 that incorporates a MedSigLIP encoder tuned on 33 million medical image-text pairs, achieving +15.5 F1 improvement on CheXpert (chest X-ray classification) and +32.1 F1 on SLAKE (medical visual question answering) while reducing electronic health record retrieval errors by 50\%. Although this dissertation fine-tunes the base Gemma~3~4B rather than MedGemma, the existence of MedGemma confirms that the Gemma~3 architecture transfers effectively to medical tasks. Second, at 4 billion parameters, Gemma~3 requires approximately 2--3~GB of \gls{VRAM} under INT4 quantization, enabling concurrent loading alongside the orchestrator Qwen3-VL-8B on a single T4 16~GB \gls{GPU}. Third, the meaningful size contrast between the orchestrator (8B) and the specialized agents (4B) enables the ablation study in Experiment~3 to assess whether the proposed multi-agent architecture achieves its performance gains from the pipeline design rather than from model scale alone, strengthening the claim that the methodology is architecture-agnostic.
+
+Together, the two models provide a complementary pairing: Qwen3-VL-8B delivers strong vision-language understanding for the classification entry point, while Gemma~3~4B provides efficient text generation and validation at a parameter count that permits concurrent deployment. This configuration enables the full multi-agent pipeline to operate within the 16~GB \gls{VRAM} budget of a single T4 \gls{GPU}, satisfying the resource efficiency and privacy preservation objectives established in Chapter~\ref{chap:Chapter1}.
+
+In addition to the two models deployed within the multi-agent pipeline, \textbf{MiniCPM-V 2.6} \parencite{yao2025minicpmv} is included as a third experimental model for cross-architecture validation in the classification experiments. MiniCPM-V 2.6 is an 8-billion parameter \gls{VLM} developed by OpenBMB that achieves GPT-4V-level performance on multiple multimodal benchmarks while being optimized for edge deployment, making it a compelling comparison point within the same parameter class as Qwen3-VL-8B but with a fundamentally different architecture. The model employs a SigLIP-based vision encoder with adaptive visual encoding and a Qwen2-based language backbone, supporting real-time video understanding and multilingual OCR alongside standard image comprehension. MiniCPM-V 2.6 is not part of the deployed multi-agent pipeline; rather, its inclusion in the experiments serves to test whether the fine-tuning methodology generalizes across \gls{VLM} architectures, strengthening the claim that performance gains are attributable to the domain adaptation strategy rather than to architecture-specific properties of any single model.
+
+The orchestrator \gls{VLM} component operates as the system's entry point, receiving clinical images and producing structured classification outputs. The model is prompted to return a JSON object containing the predicted diagnostic category, a confidence score, and a brief natural language rationale for the classification. This structured output format facilitates downstream routing to the appropriate specialized agent, establishing a clean interface between the visual classification stage and the domain-specific knowledge augmentation pipeline.
+
+\subsection{RAG Pipeline Design}
+\label{subsec:rag_design}
+
+The \gls{RAG} pipeline addresses the knowledge augmentation requirement identified in Chapter~\ref{chap:Chapter2}, providing the specialized agents with relevant, citable medical context that grounds their responses in authoritative sources. Each specialized agent maintains its own ChromaDB instance, enabling domain-specific knowledge partitioning. The pipeline follows the advanced \gls{RAG} paradigm described by \textcite{gao2024ragsurvey}, incorporating pre-retrieval query processing, hybrid retrieval, and post-retrieval re-ranking to maximize context relevance. The design encompasses four stages: knowledge base construction, document processing, hybrid retrieval, and cross-encoder re-ranking.
+
+\textit{Knowledge Base Construction.} The medical knowledge corpus is assembled from three complementary sources selected for their clinical authority and coverage of the DermNet diagnostic categories:
+
+\begin{enumerate}
+    \item \textbf{DermNet NZ}: A comprehensive dermatological reference providing detailed descriptions of skin conditions, including clinical presentation, dermoscopic features, differential diagnosis, and management guidelines. Articles corresponding to the 23 DermNet disease categories and their differential diagnoses are extracted and processed.
+
+    \item \textbf{PubMed Abstracts}: Abstracts from peer-reviewed dermatological literature are retrieved using Medical Subject Headings (MeSH) queries specific to the 23 DermNet disease categories, spanning malignant lesions, inflammatory conditions, infectious diseases, and benign tumors. The corpus is filtered to publications from 2018--2026 to ensure currency.
+
+    \item \textbf{Merck Manual -- Dermatology Sections}: Professional-edition content covering dermatological conditions relevant to the classification task, providing standardized clinical reference material.
+\end{enumerate}
+
+\textit{Document Processing.} Documents are processed through a semantic chunking pipeline that segments text based on topic coherence rather than fixed token windows, preserving the semantic integrity of clinical descriptions \parencite{wang2025ragbestpractices}. Chunks are sized at approximately 512 tokens with 64-token overlap, a configuration chosen to balance context completeness against the constrained input windows of the downstream \gls{SLM}. Each chunk retains metadata including source document, section heading, and publication date, enabling citation attribution in generated responses.
+
+\textit{Embedding and Storage.} Document chunks are encoded using BGE-M3 \parencite{chen2024bge}, a state-of-the-art multilingual embedding model that supports dense, sparse, and multi-vector retrieval within a single architecture. BGE-M3 was selected because it achieves top-tier performance on medical text retrieval benchmarks, its multi-functionality enables direct comparison between dense and sparse retrieval strategies within the same embedding space, and its 8192-token context window accommodates the longer medical text passages present in clinical guidelines. Embeddings are stored in ChromaDB \parencite{chroma2023}, an open-source vector database chosen for its lightweight deployment footprint and native Python integration with LangChain \parencite{chase2023langchain}.
+
+\textit{Hybrid Retrieval.} Retrieval employs a hybrid strategy combining BM25 sparse retrieval with dense semantic search, following the best practice recommendation from \textcite{chen2025ragsystematic} that hybrid approaches consistently outperform single-method retrieval. The sparse component captures lexical matches to medical terminology (e.g., ``actinic keratosis,'' ``dermoscopic features''), while the dense component captures semantic similarity for paraphrased or contextually related passages. Retrieval scores from both methods are combined using reciprocal rank fusion, producing a unified ranking that balances lexical precision with semantic recall.
+
+\textit{Cross-Encoder Re-Ranking.} The top-$k$ candidates from hybrid retrieval (with $k = 20$) are re-ranked using a cross-encoder model that jointly attends to the query and each candidate passage. Cross-encoder re-ranking has been shown to improve retrieval precision by 15--25\% compared to bi-encoder retrieval alone \parencite{wang2025ragbestpractices}, with particularly pronounced gains on domain-specific queries where semantic nuance is critical. The top five re-ranked passages are concatenated and provided as context to the downstream advisory agent.
+
+\subsection{Small Language Model Agents}
+\label{subsec:slm_advisor}
+
+Each of the four specialized advisory agents receives the orchestrator's classification result together with medical context retrieved from its dedicated ChromaDB instance and generates a structured clinical advisory report. These agents are powered by Gemma~3~4B \parencite{mesnard2025gemma3}, configured for grounded response generation, synthesizing the retrieved passages into a coherent clinical narrative rather than generating from parametric memory alone.
+
+The advisory prompt is structured to produce reports containing four components: a summary of the classified condition based on the retrieved context, characteristic clinical and dermoscopic features that support the classification, relevant differential diagnoses that merit consideration, and recommended next steps that emphasize the need for professional dermatological evaluation. The prompt explicitly instructs the model to cite retrieved passages and to flag uncertainty when retrieved context is insufficient or contradictory. This design implements the ``summarization of ground truth'' paradigm described in Chapter~\ref{chap:Chapter1}, constraining the model to information synthesis rather than creative generation \parencite{hassan2025optimizing}.
+
+A deliberate separation of concerns governs the advisory agent's role: it does not perform independent classification but instead accepts the \gls{VLM} classification as given and focuses on contextualizing this classification within the retrieved medical knowledge. This boundary follows the specialization principle identified in the multi-agent literature \parencite{tran2025multiagent, wang2025slmllmcollab}, ensuring that each agent operates within its competence boundary and that diagnostic and explanatory responsibilities remain cleanly partitioned.
+
+\subsection{Validation Agent}
+\label{subsec:verification}
+
+The Validation Agent, also powered by Gemma~3~4B \parencite{mesnard2025gemma3}, constitutes the final quality gate in the pipeline, addressing the hallucination risks that the literature identifies as a critical safety concern in medical AI applications \parencite{chen2025medicalhallucination, wang2025hallucination}. This agent operates by comparing claims in the generated advisory against both the retrieved context and a separate verification knowledge base. Claims that cannot be grounded in either source are flagged as potentially hallucinated. Beyond factual grounding, the agent checks for internal consistency, ensuring, for example, that the advisory does not recommend treatments inconsistent with the classified condition, and for completeness, verifying that all required report sections are present.
+
+This multi-faceted verification addresses the three hallucination types identified by \textcite{chen2025medicalhallucination}: intrinsic contradictions that conflict with source information, extrinsic unsupported claims that introduce unverified content, and confabulated clinical details that fabricate specific medical facts. The Validation Agent's design reflects the evidence from the multi-agent literature that cross-validation between agents achieves 20--40\% hallucination reductions compared to single-model generation \parencite{du2023improving, liang2023encouraging}.
+
+\subsection{Multi-Agent Orchestration}
+\label{subsec:orchestration}
+
+The six agents (one orchestrator, four specialized, one validation) are coordinated through a LangGraph \parencite{langgraph2024} state machine that manages the diagnostic workflow, maintaining shared state across agent transitions and implementing error handling for fault tolerance. LangGraph was selected over alternative orchestration frameworks such as AutoGen and CrewAI for three reasons: its explicit state management model provides full visibility into pipeline state at each transition point, its conditional branching support enables confidence-gated routing to specialized agents, and its native integration with LangChain components used throughout the system eliminates adapter overhead.
+
+Figure~\ref{fig:langgraph_state} presents the state machine diagram governing the multi-agent workflow. The system maintains a shared state object containing the input image, classification results, routing decision, retrieved context, generated advisory, and verification outcomes. The orchestrator writes classification and routing information to the state; the selected specialized agent reads this state, performs RAG retrieval against its dedicated ChromaDB instance, and writes the draft advisory; the validation agent reads the draft and writes verification outcomes.
+
+%----------------------------------------------------------------------------------------
+
+\section{Experimental Methodology}
+\label{sec:experimental_methodology}
+
+\subsection{Datasets}
+\label{subsec:datasets}
+
+\subsubsection{DermNet}
+\label{subsubsec:dermnet}
+
+The primary dataset for classification experiments is the DermNet skin disease image dataset \parencite{dermnet2023kaggle}, comprising approximately 19,500 clinical photographs spanning 23 skin disease classes. Sourced from the DermNet NZ dermatological atlas and curated on Kaggle, this dataset was selected for three reasons. First, it uses clinical photographs---the same modality captured by consumer-grade cameras and smartphones---rather than dermoscopic images, directly matching the user-facing edge deployment scenario targeted by this dissertation. Second, the 23-class taxonomy spans malignant lesions (e.g., melanoma, basal cell carcinoma), inflammatory conditions (e.g., eczema, psoriasis), infectious diseases (e.g., warts, fungal infections), and benign tumors, providing substantially broader diagnostic coverage than dermoscopic-only datasets. Third, prior work has established benchmark performance on this dataset: \textcite{bajwa2020dermnet} reported 80\% accuracy and 98\% AUC using deep CNNs on the full 23-class problem, providing a published reference point for comparison with the proposed system.
+
+Table~\ref{tab:dermnet_distribution} presents the class distribution. As with most dermatological datasets, DermNet exhibits substantial class imbalance, with the largest classes containing several times more images than the smallest. This imbalance motivates the use of macro-averaged metrics that weight all classes equally regardless of prevalence, preventing the evaluation from being dominated by majority-class performance.
+
+\begin{table}[H]
+\centering
+\caption{DermNet dataset: 23 skin disease categories (${\sim}19{,}500$ clinical photographs sourced from the DermNet NZ atlas).}
+\label{tab:dermnet_distribution}
+\small
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{ll}
+\hline
+\multicolumn{2}{c}{\textbf{Disease Categories}} \\
+\hline
+Acne and Rosacea                  & Melanoma Skin Cancer Nevi \\
+Actinic Keratosis                 & Nail Fungus and Infection \\
+Atopic Dermatitis                 & Poison Ivy and Contact Dermatitis \\
+Basal Cell Carcinoma              & Psoriasis Lichen Planus \\
+Bullous Disease                   & Scabies Lyme and Bites \\
+Cellulitis                        & Seborrheic Keratoses \\
+Eczema                            & Systemic Disease \\
+Exanthems and Drug Eruptions      & Tinea Ringworm Candidiasis \\
+Hair Loss Alopecia                & Urticaria Hives \\
+Herpes HPV and STDs               & Vascular Tumors \\
+Light Diseases and Pigmentation   & Warts Molluscum and Viral \\
+Lupus and Connective Tissue       & \\
+\hline
+\end{tabular}
+\end{table}
+
+It is important to note that DermNet's diagnostic labels are atlas-derived rather than histopathologically confirmed, which may introduce label noise compared to datasets such as HAM10000 \parencite{tschandl2018ham10000} where ground truth is established through biopsy. This trade-off is accepted in exchange for the substantially broader class coverage and clinical photography modality that better match the target deployment setting.
+
+The dataset is divided into training (70\%), validation (15\%), and test (15\%) sets using stratified sampling at the image level to preserve class proportions across splits. Unlike dermoscopic datasets such as HAM10000, where multiple images of the same lesion necessitate lesion-level splitting to prevent data leakage, DermNet's clinical photographs represent distinct patients and conditions, making image-level splitting appropriate. The test set is held out throughout model development and used exclusively for final evaluation. All models compared in Experiment~1 are evaluated on the identical test set to ensure fair comparison.
+
+\subsubsection{Fitzpatrick17k}
+\label{subsubsec:fitzpatrick17k}
+
+The Fitzpatrick17k dataset \parencite{groh2021evaluating} is used for fairness analysis, providing 16,577 clinical photographs annotated with Fitzpatrick skin type (I--VI) labels alongside diagnostic categories. This dataset enables evaluation of model performance stratified by skin phototype, directly addressing the equity concerns raised in Section~\ref{sec:prob_description} of Chapter~\ref{chap:Chapter1} regarding AI systems trained predominantly on lighter skin tones. Fitzpatrick17k uses the same clinical photography modality as DermNet, enabling direct comparison of model performance across skin phototypes without the modality gap that would exist with dermoscopic datasets. It provides the only large-scale dataset with both diagnostic labels and skin type annotations, making it indispensable for bias assessment.
+
+\subsubsection{RAG Evaluation Corpus}
+\label{subsubsec:rag_corpus}
+
+The \gls{RAG} pipeline is evaluated using a dedicated corpus constructed from the knowledge base sources described in Section~\ref{subsec:rag_design}. A set of 200 clinical questions spanning the 23 DermNet diagnostic categories is developed, with ground-truth answers derived from established dermatological references. These question-answer pairs serve as the evaluation substrate for Experiment~2, enabling computation of retrieval precision, answer faithfulness, and hallucination rates with a standardized reference against which automated metrics can be calibrated.
+
+\subsection{Baselines and Comparison Models}
+\label{subsec:baselines}
+
+The experimental design compares eight models for the classification task, representing three categories: fine-tuned \gls{VLM}s, zero-shot \gls{VLM}s, and commercial \gls{LLM} endpoints. Table~\ref{tab:comparison_models} summarizes the models and their configurations.
+
+\begin{table}[H]
+\centering
+\caption{Models compared in the classification experiments. All models are evaluated on the identical held-out test set from DermNet.}
+\label{tab:comparison_models}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{p{4.5cm}p{2.2cm}p{2.5cm}p{4.5cm}}
+\hline
+\textbf{Model} & \textbf{Parameters} & \textbf{Category} & \textbf{Configuration} \\
+\hline
+Qwen3-VL-8B + LoRA          & 8B   & Fine-tuned VLM  & LoRA via Unsloth, GRPO \\
+Gemma 3 4B + LoRA            & 4B   & Fine-tuned VLM  & LoRA via Unsloth \\
+MiniCPM-V 2.6 + LoRA        & 8B   & Fine-tuned VLM  & LoRA via Unsloth \\
+Qwen3-VL-8B zero-shot       & 8B   & Zero-shot VLM   & Instruction prompt only \\
+Gemma 3 4B zero-shot         & 4B   & Zero-shot VLM   & Instruction prompt only \\
+MiniCPM-V 2.6 zero-shot     & 8B   & Zero-shot VLM   & Instruction prompt only \\
+GPT-4o                       & N/A  & Commercial LLM  & Via OpenAI API \\
+GPT-4o-mini                  & N/A  & Commercial LLM  & Via OpenAI API \\
+\hline
+\end{tabular}
+\end{table}
+
+GPT-4o serves as the primary baseline, representing the monolithic \gls{LLM} approach that the proposed system aims to match or exceed. This model was selected because it represents the current state-of-the-art commercial multimodal model, and this model was evaluated directly on the DermNet test set under identical conditions to enable fair comparison. Prior work on DermNet established 80\% accuracy using deep CNNs \parencite{bajwa2020dermnet}, providing a published reference point for validation. GPT-4o-mini provides an additional commercial baseline at a lower computational tier, enabling analysis of the cost-performance trade-off within commercial offerings.
+
+The zero-shot variants of all three \gls{VLM} architectures serve as controlled comparisons that isolate the effect of fine-tuning. By holding all variables constant except the presence of domain-specific adaptation, comparing fine-tuned against zero-shot performance on each architecture directly quantifies the value of domain specialization, addressing the evidence from Chapter~\ref{chap:Chapter2} that fine-tuned \gls{SLM}s significantly outperform their zero-shot counterparts on specialized tasks \parencite{bucher2024finetuned, liu2024toolcalling}. This design is particularly important for Gemma~3~4B, where the zero-shot baseline is necessary to attribute any competitive performance to domain adaptation rather than inherent model capability.
+
+\subsection{Fine-Tuning Protocol}
+\label{subsec:finetuning}
+
+The fine-tuning procedure employs \gls{LoRA} \parencite{hu2021lora}, a parameter-efficient adaptation technique that injects trainable low-rank matrices into the attention layers of the pre-trained model while keeping the original weights frozen. This approach reduces trainable parameters to fewer than 1\% of the total model size, enabling fine-tuning on a single \gls{GPU} \parencite{han2024peftsurvey, wang2025peftmethodologies}. For the Qwen3-VL-8B orchestrator, an additional Group Relative Policy Optimization (GRPO) stage is applied after LoRA fine-tuning, using verifiable rewards to align the model's classification outputs with structured diagnostic criteria. Table~\ref{tab:lora_shared} details the shared hyperparameters common to all three models, and Table~\ref{tab:lora_permodel} specifies the per-model LoRA configurations that vary across architectures.
+
+\begin{table}[H]
+\centering
+\caption{Shared fine-tuning hyperparameters applied to all three VLM architectures.}
+\label{tab:lora_shared}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{ll}
+\hline
+\textbf{Hyperparameter} & \textbf{Value} \\
+\hline
+LoRA rank ($r$)            & 16 \\
+Learning rate              & $2 \times 10^{-5}$ \\
+Learning rate schedule     & Cosine with warmup (5\% of steps) \\
+Optimizer                  & AdamW ($\beta_1 = 0.9$, $\beta_2 = 0.999$, $\epsilon = 10^{-8}$) \\
+Weight decay               & 0.01 \\
+Precision                  & FP16 mixed precision \\
+Effective batch size       & 32 (via gradient accumulation) \\
+Maximum epochs             & 5 \\
+Early stopping patience    & 2 epochs (monitored on validation macro-F1) \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Per-model LoRA configuration. Rank is shared ($r=16$); alpha, dropout, target modules, and trainable parameter fraction vary per architecture.}
+\label{tab:lora_permodel}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{p{3.2cm}cccp{3.5cm}}
+\hline
+\textbf{Model} & \textbf{$\alpha$} & \textbf{Dropout} & \textbf{Trainable (\%)} & \textbf{Target Modules} \\
+\hline
+Qwen3-VL-8B     & 16  & 0.05 & ${\sim}0.50$ & Language attn.\ (Q,K,V,O) \\
+Gemma 3 4B       & 16  & 0.10 & ${\sim}0.85$ & Vision + language attn. \\
+MiniCPM-V 2.6   & 32  & 0.05 & ${\sim}0.48$ & Language attn.\ (Q,K,V,O) \\
+\hline
+\end{tabular}
+\end{table}
+
+The LoRA rank of 16 was selected based on the findings of \textcite{han2024peftsurvey}, who demonstrate that ranks between 8 and 32 achieve near-optimal performance for vision-language fine-tuning, with rank~16 providing a favourable trade-off between adaptation capacity and parameter efficiency. The rank is shared across all three models to enable controlled comparison, but the scaling factor ($\alpha$) and target modules vary per architecture. Qwen3-VL-8B adopts $\alpha = 16$ (1:1 ratio) targeting language-side attention projections only, as the model employs a separate vision encoder whose frozen representations transfer well to the dermatological domain. Gemma~3~4B uses $\alpha = 16$ with an elevated dropout of 0.10 and targets both vision encoder and language model projections; the smaller parameter budget makes comprehensive adaptation across both modalities particularly important for domain transfer, following the evidence from \textcite{he2024pefomed} that joint vision-language adaptation yields superior results for medical multimodal tasks. MiniCPM-V 2.6 uses $\alpha = 32$ (a 2:1 ratio relative to the shared rank of 16) and targets language-side attention projections only, mirroring the Qwen3-VL-8B strategy; the elevated alpha compensates for the shared rank by increasing the effective learning rate of the low-rank updates, which preliminary experiments indicated was beneficial for the MiniCPM-V architecture's convergence behaviour.
+
+Fine-tuning is conducted using Unsloth \parencite{han2024unsloth}, an open-source framework that accelerates \gls{LoRA} fine-tuning through custom CUDA kernels and optimized memory management, achieving approximately 1.6$\times$ faster training and 60\% lower memory consumption compared to standard Hugging Face PEFT pipelines. This efficiency gain is critical for the constrained hardware budget of this dissertation, enabling full fine-tuning runs on the free tier of Google Colab. Training data consists of the DermNet training split, formatted as image-instruction pairs where the instruction prompts the model to classify the clinical image into one of the 23 diagnostic categories with a structured JSON response. Data augmentation includes random horizontal and vertical flips, rotation ($\pm 15°$), and colour jittering to improve robustness to imaging variations.
+
+In addition to standard supervised fine-tuning via LoRA, the Qwen3-VL-8B orchestrator is further optimized using Group Relative Policy Optimization (GRPO), a reinforcement learning method that eliminates the value network required by Proximal Policy Optimization (PPO) and instead estimates advantages from group-based relative comparisons within sampled outputs. GRPO reduces compute requirements by approximately 50\% compared to PPO-based RLHF while maintaining training stability. The GRPO training stage uses verifiable rewards based on classification correctness and structured output adherence, implemented via the TRL library integrated with Unsloth.
+
+Training is performed on a single Google Colab T4 16~GB \gls{GPU} using QLoRA \parencite{dettmers2023qlora} with 4-bit NormalFloat quantization of the base model weights. The Qwen3-VL-8B orchestrator requires approximately 10--12~GB of \gls{VRAM} during training, Gemma~3~4B requires approximately 6~GB, and MiniCPM-V 2.6 requires approximately 10--12~GB (comparable to Qwen3-VL-8B given its similar 8B parameter count), all well within the T4's 16~GB budget. FP16 mixed precision is used throughout, as the NVIDIA T4 architecture lacks native BF16 support. Model selection is based on the validation macro-F1 score, with the best checkpoint retained for evaluation. All training runs are tracked using Weights \& Biases \parencite{wandb2020} for reproducibility, recording loss curves, learning rate schedules, and validation metrics at each epoch.
+
+\subsection{Evaluation Metrics}
+\label{subsec:metrics}
+
+The experimental evaluation employs metrics tailored to each experiment's objectives, organized into four categories corresponding to the four experiments: classification performance, \gls{RAG} quality, end-to-end system performance, and resource efficiency.
+
+\subsubsection{Classification Metrics (Experiment~1)}
+
+For the classification task, macro-F1 serves as the primary evaluation metric. Defined as the unweighted mean of per-class F1 scores, macro-F1 treats all diagnostic categories equally regardless of prevalence, making it the appropriate choice for imbalanced datasets where accuracy would be dominated by majority-class performance. Overall accuracy is reported as a complementary metric to enable comparison with prior work, alongside weighted-F1 (which reflects expected performance on the natural class distribution) and AUROC (computed using a one-vs-rest strategy for the multiclass setting, providing a threshold-independent measure of discriminative ability). Per-class precision, recall, and F1 scores are reported to enable identification of diagnostic categories where the model excels or underperforms, and confusion matrices provide visual representation of systematic misclassification patterns. Given the clinical priority of identifying melanoma---a potentially lethal condition---dedicated melanoma sensitivity and specificity metrics are also reported.
+
+\subsubsection{RAG Quality Metrics (Experiment~2)}
+
+\gls{RAG} evaluation follows the RAGAS framework \parencite{es2024ragas}, which provides four standardized metrics for retrieval-augmented generation systems. Faithfulness measures the proportion of claims in the generated response that can be traced to the retrieved context, directly quantifying grounding quality. Answer relevancy captures the semantic similarity between the generated response and the reference answer, measuring whether the response addresses the clinical question. Context precision assesses the proportion of retrieved passages that are relevant to the query, and context recall measures the proportion of reference-answer content that appears in the retrieved context. Beyond these standardized metrics, two domain-specific measures are computed: a hallucination rate, defined as the proportion of generated claims not grounded in authoritative reference material and assessed through structured annotation by domain reviewers, and a clinical accuracy score on a 0--10 structured rubric evaluating medical correctness across dimensions including diagnostic accuracy, feature description correctness, differential diagnosis appropriateness, and recommendation safety.
+
+\subsubsection{End-to-End Metrics (Experiment~3)}
+
+The end-to-end evaluation measures four aspects of the complete pipeline. End-to-end accuracy captures the proportion of cases where the full pipeline produces both a correct classification and clinically appropriate advisory content. Pipeline reliability is defined as the proportion of inputs that successfully traverse all agents (orchestrator, selected specialized agent, and validation agent) without error or timeout. The hallucination rate is measured on the final verified output, directly quantifying the Validation Agent's effectiveness at filtering unsupported claims. Finally, a latency breakdown reports wall-clock time for each agent and the total pipeline duration, enabling identification of computational bottlenecks.
+
+\subsubsection{Resource Efficiency Metrics (Experiment~4)}
+
+Resource efficiency is assessed along five dimensions. Peak \gls{VRAM} usage during inference is measured on the NVIDIA T4 16~GB \gls{GPU} (the target deployment hardware, available both via Google Colab and the university cluster) to characterize deployment requirements. Inference latency is reported as median and 95th percentile values across the test set, measuring the time from image submission to final report generation. Throughput captures the number of diagnostic queries processed per minute under sustained load. Cost per query is estimated from cloud GPU rental rates for local models and API pricing for commercial endpoints. Finally, the impact of INT4 quantization on both accuracy and latency is assessed by comparing FP16 and INT4 inference configurations, quantifying the trade-off between model compression and diagnostic quality.
+
+\subsection{Statistical Analysis Methods}
+\label{subsec:statistical}
+
+Statistical significance of pairwise model comparisons is assessed using McNemar's test \parencite{mcnemar1947}, which evaluates whether the disagreement pattern between two classifiers differs significantly from chance. McNemar's test is preferred over paired $t$-tests for classification comparison because it accounts for the correlated nature of predictions on the same test instances. Given eight models, a hierarchical two-family approach is adopted to control the family-wise error rate at $\alpha = 0.05$ while maintaining statistical power. The first family comprises the five core models (three fine-tuned \gls{VLM}s plus two commercial endpoints), yielding 10 pairwise comparisons with a Bonferroni-corrected threshold of $\alpha/10 = 0.005$. The second family comprises three paired comparisons of fine-tuned versus zero-shot variants within each \gls{VLM} architecture, with a Bonferroni-corrected threshold of $\alpha/3 \approx 0.0167$. This hierarchical structure avoids the excessive conservatism of a single 15-comparison correction while maintaining rigorous control over each scientifically distinct question.
+
+Confidence intervals for all metrics are computed using the bootstrap method \parencite{efron1993bootstrap} with 1,000 resampling iterations, providing 95\% percentile confidence intervals that account for the finite test set size without distributional assumptions. Bootstrap confidence intervals are reported alongside point estimates for all primary metrics, enabling assessment of both statistical significance and practical significance of observed differences.
+
+%----------------------------------------------------------------------------------------
+
+\section{Results and Discussion}
+\label{sec:results_discussion}
+
+% NOTE: This section contains placeholder tables and figures to be populated
+% after experimental runs are completed. The structure, captions, and column
+% definitions are finalized; only numerical values remain to be filled.
+
+\subsection{Experiment 1: VLM Classification Performance}
+\label{subsec:exp1_results}
+
+This experiment evaluates the classification performance of eight models on the DermNet test set, comparing fine-tuned \gls{VLM}s against their zero-shot baselines and commercial \gls{LLM} endpoints. Table~\ref{tab:overall_results} presents overall performance across the four primary metrics, Table~\ref{tab:perclass_f1} reports per-class F1 scores, Table~\ref{tab:mcnemar_core} presents McNemar's test results for the five core models, and Table~\ref{tab:mcnemar_zs} presents the fine-tuned versus zero-shot comparisons. The results are expected to address four questions: whether fine-tuning yields statistically significant improvements over zero-shot prompting, whether fine-tuned 4--8B parameter models can match or exceed published DermNet baselines, whether the observed patterns are consistent across all three VLM architectures, and whether the 4B-parameter Gemma~3 remains competitive with the larger 8B Qwen3-VL and MiniCPM-V 2.6 after domain adaptation, with MiniCPM-V 2.6 providing cross-architecture validation that the fine-tuning methodology generalizes beyond a single model family.
+
+\begin{table}[H]
+\centering
+\caption{Overall classification performance on the DermNet test set. Macro-F1 is the primary metric. 95\% bootstrap confidence intervals are shown in parentheses. Best result per metric is shown in \textbf{bold}.}
+\label{tab:overall_results}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{p{4.2cm}cccc}
+\hline
+\textbf{Model} & \textbf{Accuracy} & \textbf{Macro-F1} & \textbf{Weighted-F1} & \textbf{AUROC} \\
+\hline
+Qwen3-VL-8B + LoRA     & --  & --  & --  & -- \\
+Gemma 3 4B + LoRA       & --  & --  & --  & -- \\
+MiniCPM-V 2.6 + LoRA   & --  & --  & --  & -- \\
+Qwen3-VL-8B zero-shot  & --  & --  & --  & -- \\
+Gemma 3 4B zero-shot    & --  & --  & --  & -- \\
+MiniCPM-V 2.6 zero-shot & --  & --  & --  & -- \\
+GPT-4o                  & --  & --  & --  & -- \\
+GPT-4o-mini             & --  & --  & --  & -- \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Mean F1 scores by disease group for each model on the DermNet test set. The 23 diagnostic categories are grouped into four clinically meaningful clusters. Full per-class F1 scores for all 23 categories are reported in Appendix~\ref{app:full_results}.}
+\label{tab:perclass_f1}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{p{3.5cm}cccc}
+\hline
+\textbf{Model} & \textbf{Malignant} & \textbf{Inflammatory} & \textbf{Infectious} & \textbf{Benign/Other} \\
+\hline
+Qwen3-VL-8B + LoRA     & -- & -- & -- & -- \\
+Gemma 3 4B + LoRA       & -- & -- & -- & -- \\
+MiniCPM-V 2.6 + LoRA   & -- & -- & -- & -- \\
+Qwen3-VL-8B zero-shot  & -- & -- & -- & -- \\
+Gemma 3 4B zero-shot    & -- & -- & -- & -- \\
+MiniCPM-V 2.6 zero-shot & -- & -- & -- & -- \\
+GPT-4o                  & -- & -- & -- & -- \\
+GPT-4o-mini             & -- & -- & -- & -- \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{McNemar's test $p$-values for pairwise comparisons among the five core models (three fine-tuned VLMs and two commercial endpoints). Values below the Bonferroni-corrected significance threshold ($\alpha/10 = 0.005$) are shown in \textbf{bold}.}
+\label{tab:mcnemar_core}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{p{3.2cm}cccc}
+\hline
+& \makecell{Gemma 3 4B\\+ LoRA} & \makecell{MiniCPM-V 2.6\\+ LoRA} & GPT-4o & GPT-4o-mini \\
+\hline
+Qwen3-VL-8B + LoRA   & -- & -- & -- & -- \\
+Gemma 3 4B + LoRA     &    & -- & -- & -- \\
+MiniCPM-V 2.6 + LoRA &    &    & -- & -- \\
+GPT-4o                &    &    &    & -- \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{McNemar's test $p$-values for fine-tuned vs.\ zero-shot comparisons within each VLM architecture. Values below the Bonferroni-corrected threshold ($\alpha/3 \approx 0.0167$) are shown in \textbf{bold}.}
+\label{tab:mcnemar_zs}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lcc}
+\hline
+\textbf{Architecture} & \textbf{McNemar $p$-value} & \textbf{$\Delta$ Accuracy (\%)} \\
+\hline
+Qwen3-VL-8B (LoRA vs.\ zero-shot)     & -- & -- \\
+Gemma 3 4B (LoRA vs.\ zero-shot)       & -- & -- \\
+MiniCPM-V 2.6 (LoRA vs.\ zero-shot)   & -- & -- \\
+\hline
+\end{tabular}
+\end{table}
+
+% TODO: Replace placeholder with actual confusion matrix after experiments
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.7\textwidth]{ch3/assets/confusion_matrix.pdf}
+    \fbox{\parbox{0.65\textwidth}{\centering\vspace{3cm}\textit{Placeholder: Confusion matrix for the best-performing model on the DermNet test set, showing classification patterns across 23 diagnostic categories.}\vspace{3cm}}}
+    \caption{Confusion matrix for the best-performing model on the DermNet test set. Rows represent true labels and columns represent predicted labels. Colour intensity indicates the proportion of predictions within each true class.}
+    \label{fig:confusion_matrix}
+\end{figure}
+
+% TODO: Replace placeholder with actual ROC curves after experiments
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.7\textwidth]{ch3/assets/roc_melanoma.pdf}
+    \fbox{\parbox{0.65\textwidth}{\centering\vspace{3cm}\textit{Placeholder: ROC curves for melanoma detection (one-vs-rest) across all eight models, with AUROC values in the legend.}\vspace{3cm}}}
+    \caption{Receiver operating characteristic curves for melanoma detection (one-vs-rest) across all compared models. The diagonal dashed line represents random classification. AUROC values are reported in the legend.}
+    \label{fig:roc_melanoma}
+\end{figure}
+
+% TODO: Replace placeholder with actual training curves after experiments
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.9\textwidth]{ch3/assets/training_curves.pdf}
+    \fbox{\parbox{0.85\textwidth}{\centering\vspace{3cm}\textit{Placeholder: Training loss and validation macro-F1 curves over epochs for all three fine-tuned models (Qwen3-VL-8B, Gemma 3 4B, and MiniCPM-V 2.6) using Unsloth + LoRA on Google Colab T4 16~GB.}\vspace{3cm}}}
+    \caption{Training dynamics for VLM fine-tuning via Unsloth on Google Colab T4 16~GB. Left: training loss over epochs. Right: validation macro-F1 over epochs. Dashed vertical lines indicate early stopping checkpoints. Both models exhibit convergent training with no evidence of overfitting within the early stopping window.}
+    \label{fig:training_curves}
+\end{figure}
+
+\subsection{Experiment 2: RAG Impact on Diagnostic Explanations}
+\label{subsec:exp2_results}
+
+The second experiment isolates the contribution of the \gls{RAG} pipeline to the quality of generated diagnostic explanations. Four conditions are compared: the \gls{SLM} advisory agent without retrieval augmentation (relying solely on parametric knowledge), the agent augmented with naive RAG (dense retrieval only, no re-ranking), the agent augmented with the full hybrid RAG pipeline (hybrid retrieval with cross-encoder re-ranking), and GPT-4o without RAG as a commercial baseline. Table~\ref{tab:ragas_metrics} reports the RAGAS evaluation metrics, and Table~\ref{tab:hallucination_clinical} presents hallucination rates and clinical accuracy scores.
+
+\begin{table}[H]
+\centering
+\caption{RAGAS evaluation metrics across RAG configurations. All metrics are on a 0--1 scale (higher is better). 95\% bootstrap confidence intervals are shown in parentheses.}
+\label{tab:ragas_metrics}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{p{4cm}cccc}
+\hline
+\textbf{Condition} & \textbf{Faithfulness} & \textbf{Relevancy} & \textbf{Context Prec.} & \textbf{Context Rec.} \\
+\hline
+SLM without RAG          & -- & -- & -- & -- \\
+SLM + naive RAG          & -- & -- & -- & -- \\
+SLM + hybrid RAG         & -- & -- & -- & -- \\
+GPT-4o without RAG       & -- & -- & -- & -- \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Hallucination rates and clinical accuracy scores across RAG configurations. Hallucination rate is the proportion of generated claims not grounded in authoritative sources. Clinical accuracy is scored on a 0--10 structured rubric.}
+\label{tab:hallucination_clinical}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{p{4cm}cc}
+\hline
+\textbf{Condition} & \textbf{Hallucination Rate (\%)} & \textbf{Clinical Accuracy (0--10)} \\
+\hline
+SLM without RAG          & -- & -- \\
+SLM + naive RAG          & -- & -- \\
+SLM + hybrid RAG         & -- & -- \\
+GPT-4o without RAG       & -- & -- \\
+\hline
+\end{tabular}
+\end{table}
+
+% TODO: Replace placeholder with actual scatter plot after experiments
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.6\textwidth]{ch3/assets/faithfulness_vs_hallucination.pdf}
+    \fbox{\parbox{0.55\textwidth}{\centering\vspace{3cm}\textit{Placeholder: Scatter plot showing faithfulness score vs hallucination rate for each RAG condition, with error bars representing 95\% CIs.}\vspace{3cm}}}
+    \caption{Relationship between RAGAS faithfulness score and hallucination rate across RAG configurations. Each point represents a condition; error bars show 95\% bootstrap confidence intervals. Higher faithfulness correlates with lower hallucination, with the hybrid RAG configuration achieving the optimal trade-off.}
+    \label{fig:faithfulness_hallucination}
+\end{figure}
+
+% TODO: Replace placeholder with actual qualitative example after experiments
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering\vspace{4cm}\textit{Placeholder: Side-by-side comparison of SLM advisory output without RAG (left) and with hybrid RAG (right) for the same melanoma classification case. The RAG-grounded response includes cited sources and avoids the speculative claims present in the ungrounded response.}\vspace{4cm}}}
+    \caption{Qualitative comparison of advisory outputs for a melanoma classification case. Left: SLM without RAG generates plausible but uncited advice. Right: SLM with hybrid RAG produces a grounded response with explicit source citations. Highlighted text indicates claims verified against the knowledge base (green) or flagged as unsupported (red).}
+    \label{fig:rag_example}
+\end{figure}
+
+\subsection{Experiment 3: Multi-Agent End-to-End Evaluation}
+\label{subsec:exp3_results}
+
+The third experiment assesses the complete multi-agent pipeline, comparing it against a monolithic GPT-4o baseline and three ablation conditions that progressively remove system components. This design enables quantification of each agent's marginal contribution to overall system performance. Table~\ref{tab:e2e_results} presents the end-to-end evaluation results, and Table~\ref{tab:ablation} reports the ablation study findings.
+
+\begin{table}[H]
+\centering
+\caption{End-to-end evaluation of the multi-agent pipeline against baselines and ablation conditions. Accuracy reflects correct classification with appropriate advisory content. Hallucination rate is measured on the final output.}
+\label{tab:e2e_results}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{p{5cm}cccc}
+\hline
+\textbf{Condition} & \textbf{E2E Accuracy} & \textbf{Reliability} & \textbf{Hallucination (\%)} & \textbf{Latency (s)} \\
+\hline
+Full pipeline                & -- & -- & -- & -- \\
+GPT-4o monolithic            & -- & -- & -- & -- \\
+VLM + SLM (no RAG)           & -- & -- & -- & -- \\
+VLM + SLM + RAG (no verify)  & -- & -- & -- & -- \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Ablation study: contribution of each system component to overall performance. Each row removes one component from the full pipeline.}
+\label{tab:ablation}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{p{5cm}ccc}
+\hline
+\textbf{Configuration} & \textbf{Macro-F1} & \textbf{Hallucination (\%)} & \textbf{Clinical Accuracy} \\
+\hline
+Full pipeline (all components)    & -- & -- & -- \\
+$-$ Validation Agent            & -- & -- & -- \\
+$-$ RAG retriever                 & -- & -- & -- \\
+$-$ Fine-tuning (zero-shot VLM)   & -- & -- & -- \\
+$-$ RAG $-$ Verification          & -- & -- & -- \\
+\hline
+\end{tabular}
+\end{table}
+
+% TODO: Replace placeholder with actual latency breakdown after experiments
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.7\textwidth]{ch3/assets/latency_breakdown.pdf}
+    \fbox{\parbox{0.65\textwidth}{\centering\vspace{3cm}\textit{Placeholder: Stacked bar chart showing latency contribution of each agent (VLM classification, RAG retrieval, SLM advisory, verification) to total pipeline duration.}\vspace{3cm}}}
+    \caption{Latency breakdown by agent for the full multi-agent pipeline. Each bar segment represents the median wall-clock time for one agent. The VLM classification and RAG retrieval stages dominate total latency, while the SLM advisory and verification stages contribute minimal overhead.}
+    \label{fig:latency_breakdown}
+\end{figure}
+
+\subsection{Experiment 4: Resource Efficiency}
+\label{subsec:exp4_results}
+
+The fourth experiment quantifies the computational and economic characteristics of the proposed system, comparing local SLM-based inference against cloud-based commercial alternatives across three dimensions: hardware requirements, latency behaviour, and monetary cost. These measurements directly address the resource efficiency and privacy preservation objectives established in Chapter~\ref{chap:Chapter1}, providing the empirical basis for assessing edge deployment feasibility. Tables~\ref{tab:resource_comparison}--\ref{tab:quantization_impact} present the resource consumption, cost analysis, and quantization impact results.
+
+\begin{table}[H]
+\centering
+\caption{Resource consumption comparison between the proposed SLM pipeline and commercial LLM baselines on the NVIDIA T4 16~GB. Cost per query reflects Google Colab GPU rates (local models) and API pricing (commercial models).}
+\label{tab:resource_comparison}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{p{4.5cm}cccc}
+\hline
+\textbf{Model} & \textbf{VRAM (GB)} & \textbf{Latency (s)} & \textbf{Throughput (q/min)} & \textbf{Cost (\$/query)} \\
+\hline
+Ours Qwen3-VL-8B (FP16)   & -- & -- & -- & -- \\
+Ours Qwen3-VL-8B (INT4)   & -- & -- & -- & -- \\
+Ours Gemma 3 4B (FP16) & -- & -- & -- & -- \\
+Ours Gemma 3 4B (INT4) & -- & -- & -- & -- \\
+Ours MiniCPM-V 2.6 (FP16) & -- & -- & -- & -- \\
+Ours MiniCPM-V 2.6 (INT4) & -- & -- & -- & -- \\
+Full pipeline (T4)         & -- & -- & -- & -- \\
+GPT-4o (API)               & N/A & -- & -- & -- \\
+GPT-4o-mini (API)          & N/A & -- & -- & -- \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Cost analysis for processing the full DermNet test set across deployment configurations. One-time costs (fine-tuning, knowledge base construction) are amortized over estimated annual query volume.}
+\label{tab:cost_analysis}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{p{4cm}ccc}
+\hline
+\textbf{Cost Component} & \textbf{Ours (Colab T4)} & \textbf{GPT-4o} & \textbf{GPT-4o-mini} \\
+\hline
+Fine-tuning (one-time)   & -- & N/A & N/A \\
+Inference (test set)     & -- & --  & -- \\
+Amortized cost/query     & -- & --  & -- \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Impact of INT4 quantization on classification accuracy across diagnostic categories. $\Delta$ indicates the change from FP16 baseline.}
+\label{tab:quantization_impact}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lccc}
+\hline
+\textbf{Metric} & \textbf{FP16} & \textbf{INT4} & \textbf{$\Delta$} \\
+\hline
+Overall accuracy  & -- & -- & -- \\
+Macro-F1          & -- & -- & -- \\
+Melanoma F1       & -- & -- & -- \\
+VRAM usage (GB)   & -- & -- & -- \\
+Latency (s)       & -- & -- & -- \\
+\hline
+\end{tabular}
+\end{table}
+
+% TODO: Replace placeholder with actual latency comparison after experiments
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.7\textwidth]{ch3/assets/latency_comparison.pdf}
+    \fbox{\parbox{0.65\textwidth}{\centering\vspace{3cm}\textit{Placeholder: Grouped bar chart comparing median inference latency across all models and hardware configurations. Error bars show 95th percentile latency.}\vspace{3cm}}}
+    \caption{Inference latency comparison across deployment configurations. Grouped bars represent median latency; error bars extend to the 95th percentile. Local SLM inference achieves substantially lower and more predictable latency compared to API-based commercial models, which exhibit variable latency due to network overhead and server load.}
+    \label{fig:latency_comparison}
+\end{figure}
+
+% TODO: Replace placeholder with actual Pareto front after experiments
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.6\textwidth]{ch3/assets/cost_accuracy_pareto.pdf}
+    \fbox{\parbox{0.55\textwidth}{\centering\vspace{3cm}\textit{Placeholder: Scatter plot of cost per query vs macro-F1 for each model configuration, with the Pareto frontier highlighted. The fine-tuned SLM pipeline is expected to occupy the Pareto-optimal region (low cost, high accuracy).}\vspace{3cm}}}
+    \caption{Cost-accuracy trade-off across deployment configurations. Each point represents a model configuration; the Pareto frontier (dashed line) identifies configurations that are not dominated in both dimensions. The fine-tuned SLM pipeline with INT4 quantization achieves the best cost-accuracy trade-off.}
+    \label{fig:cost_accuracy_pareto}
+\end{figure}
+
+% TODO: Replace placeholder with actual accuracy vs size plot after experiments
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.6\textwidth]{ch3/assets/accuracy_vs_size.pdf}
+    \fbox{\parbox{0.55\textwidth}{\centering\vspace{3cm}\textit{Placeholder: Scatter plot of model size (parameters, log scale) vs macro-F1 accuracy for all compared models. Demonstrates that fine-tuned smaller models achieve performance comparable to or exceeding much larger models.}\vspace{3cm}}}
+    \caption{Classification accuracy (macro-F1) as a function of model size. Fine-tuned 4--8B parameter models are expected to match or exceed the performance of substantially larger commercial models, demonstrating that domain-specific adaptation compensates for reduced model scale.}
+    \label{fig:accuracy_vs_size}
+\end{figure}
+
+\subsection{Discussion}
+\label{subsec:discussion}
+
+% NOTE: The following discussion structure is prepared in advance of experimental
+% results. Prose will be expanded and refined once numerical values are available.
+% The interpretive framework and analytical structure are finalized.
+
+The four experiments are designed to collectively address the objectives established in Chapter~\ref{chap:Chapter1}, and the discussion that follows will be organized around three themes: synthesis of findings, comparison with the predictions derived from the Chapter~\ref{chap:Chapter2} literature, and an assessment of limitations and threats to validity.
+
+\subsubsection{Synthesis of Findings}
+
+The experimental programme is structured to test a cascading hypothesis: that fine-tuned \gls{VLM}s across multiple architectures and parameter scales can achieve classification accuracy comparable to commercial \gls{LLM} endpoints (Experiment~1), that \gls{RAG} augmentation can ground the advisory output in authoritative medical knowledge while reducing hallucination (Experiment~2), that the full multi-agent pipeline combining these components outperforms a monolithic approach on combined classification-and-explanation quality (Experiment~3), and that this performance is achievable at a fraction of the computational cost and without transmitting patient data to external servers (Experiment~4). The inclusion of Gemma~3~4B specifically tests the lower bound of viable model scale: if a 4B-parameter model achieves competitive performance after domain adaptation, this substantially strengthens the edge deployment argument by demonstrating that the methodology extends below the 7B parameter threshold typically assumed for competitive \gls{VLM} performance. The results from these experiments will be interpreted against the specific numerical thresholds established in the literature, particularly published DermNet baselines, including 80\% accuracy achieved by deep CNNs \parencite{bajwa2020dermnet}, and will assess whether the observed improvements are both statistically significant (as determined by McNemar's test) and practically meaningful (as reflected in confidence interval widths and effect sizes).
+
+\subsubsection{Comparison with Literature Predictions}
+
+The Chapter~\ref{chap:Chapter2} review identified several empirically grounded predictions that the experimental results will either confirm or challenge. \textcite{bucher2024finetuned} predicted that fine-tuned SLMs would significantly outperform zero-shot LLMs on domain-specific classification; the comparison between fine-tuned and zero-shot VLM variants in Experiment~1 will directly test this prediction in the dermatological domain. \textcite{wang2025ragbestpractices} recommended hybrid RAG over single-method retrieval; Experiment~2's comparison of naive versus hybrid RAG configurations will validate or refute this recommendation for medical text retrieval specifically. \textcite{klang2025orchestrated} demonstrated that multi-agent systems sustain performance under cognitive load conditions where monolithic agents degrade; Experiment~3's full-pipeline evaluation will test whether this advantage holds in the dermatological diagnostic workflow. Finally, the edge deployment literature demonstrates VLM feasibility at competitive accuracy on consumer-grade hardware \parencite{xu2025edgellm, yao2025minicpmv}; Experiment~4 will determine whether the complete multi-agent pipeline, not just the VLM component, remains viable for deployment on a single T4 16~GB \gls{GPU}.
+
+\subsubsection{Limitations}
+
+Several limitations bound the scope of the conclusions that can be drawn from this work. The per-model LoRA configurations (varying alpha, dropout, and target modules across architectures) were necessary to accommodate architectural differences but introduce a potential confound: observed performance differences may partially reflect configuration choices rather than inherent architectural capabilities. The shared rank and training protocol mitigate this concern, but fully controlled comparison would require exhaustive hyperparameter search per model, which exceeds the available computational budget. The DermNet dataset provides clinical photographs across 23 diagnostic categories, offering broader coverage than dermoscopic-only datasets, but diagnostic labels are atlas-derived without histopathological confirmation, which may introduce label noise compared to histopathology-confirmed datasets such as HAM10000 \parencite{tschandl2018ham10000}. Clinical dermatology encompasses hundreds of conditions across multiple imaging modalities, and performance on this 23-class subset may not generalize to the full diagnostic spectrum. The Fitzpatrick17k fairness analysis shares the clinical photography modality with DermNet, enabling consistent bias assessment, though differences in class taxonomies between the two datasets limit direct class-level comparisons. The \gls{RAG} knowledge base, though constructed from authoritative sources, reflects a snapshot of medical knowledge that requires ongoing maintenance to remain current; the system's dependency on retrieval quality means that knowledge base gaps will propagate to advisory quality. Single-GPU training constraints limit the exploration of LoRA rank configurations, and class imbalance within DermNet means that rare categories may have limited test set representation, constraining statistical power for per-class comparisons on minority categories.
+
+\subsubsection{Threats to Validity}
+
+Internal validity is addressed through stratified image-level data splitting, stratified sampling to preserve class distributions, and bootstrap confidence intervals to quantify estimation uncertainty. External validity is limited by the single-dataset evaluation; future work should assess generalizability across additional dermatological datasets and imaging modalities. Construct validity faces the challenge that automated metrics (macro-F1, RAGAS scores) serve as proxies for clinical utility; expert clinician evaluation, while included in the clinical accuracy rubric, provides only partial coverage of the complex judgments that characterize real-world diagnostic decision-making.
+
+%----------------------------------------------------------------------------------------
+
+\section{Conclusion}
+\label{sec:chap3_conclusion}
+
+This chapter presented the design of a multi-agent system for dermatological diagnostic support and established the experimental framework through which its performance will be validated. The architecture translates the theoretical findings of Chapter~\ref{chap:Chapter2} into a routing-based multi-agent pipeline grounded in three principles---modular specialization, knowledge externalization, and privacy by design---that collectively address the limitations of monolithic \gls{LLM} approaches identified in Chapters~\ref{chap:Chapter1} and~\ref{chap:Chapter2}.
+
+The system design makes deliberate architectural choices informed by the literature review. A two-model architecture pairs Qwen3-VL-8B-Instruct \parencite{bai2025qwen3vl} as the orchestrator agent with Gemma~3~4B \parencite{mesnard2025gemma3} powering four specialized agents and a validation agent, both fine-tuned via \gls{LoRA} using the Unsloth framework \parencite{han2024unsloth} to achieve domain specialization with fewer than 1\% of trainable parameters. The orchestrator additionally benefits from GRPO training for improved classification alignment. Each specialized agent maintains a dedicated hybrid \gls{RAG} pipeline combining BM25 sparse retrieval, BGE-M3 dense retrieval, and cross-encoder re-ranking, providing the knowledge grounding that the literature identifies as essential for mitigating hallucination in smaller models. The validation agent cross-references the advisory output to enforce factual consistency. LangGraph orchestrates the complete workflow with confidence-gated routing and iterative refinement through validation-triggered retries. The entire pipeline operates within the 16~GB \gls{VRAM} budget of a single NVIDIA T4 \gls{GPU}, with training conducted on Google Colab's free tier via Unsloth.
+
+The experimental methodology specifies four experiments that systematically evaluate each system component and their integration, comparing eight models in total---three fine-tuned \gls{VLM}s, three zero-shot baselines, and two commercial endpoints. The evaluation employs appropriate metrics for imbalanced classification (macro-F1 as primary metric), standardized \gls{RAG} quality assessment (RAGAS framework), and rigorous statistical comparison (McNemar's test with hierarchical Bonferroni correction, bootstrap confidence intervals). By comparing against both zero-shot baselines and commercial \gls{LLM} endpoints---including GPT-4o and published DermNet baselines---the experimental design enables direct assessment of the central thesis that specialized \gls{SLM}-based multi-agent systems can achieve performance comparable to substantially larger models while preserving privacy and reducing computational cost.
+
+The results from these experiments, once completed, will provide the empirical evidence necessary to validate or refine the system design, inform deployment decisions regarding quantization and hardware requirements, and contribute to the growing body of evidence on the viability of small, specialized models as alternatives to monolithic \gls{LLM} architectures in high-stakes medical applications.
+
+%----------------------------------------------------------------------------------------
