@@ -6,7 +6,10 @@
       "Bash(latexmk:*)",
       "Skill(citation-management)",
       "WebFetch(domain:arxiv.org)",
-      "WebFetch(domain:www.nature.com)"
+      "WebFetch(domain:www.nature.com)",
+      "Bash(curl -s 'https://dermnetnz.org/image-library')",
+      "Bash(curl -s \"https://www.kaggle.com/api/v1/datasets/list?search=skin+rash+dataset&maxSize=&minSize=&filetype=all&tagids=&sort=relevance&page=1\")",
+      "Bash(python3 -m json.tool)"
     ]
   }
 }

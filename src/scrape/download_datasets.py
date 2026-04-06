@@ -1,18 +1,21 @@
 """
 Dataset Downloader
 
-Downloads and organises the 6-class skin disease dataset from two sources:
+Downloads and organises the 6-class skin disease dataset from three sources:
   - Kaggle DermNet (shubhamgoel27/dermnet) — 5 classes
   - SkinDisNet (Mendeley Data) — Seborrheic Dermatitis class
+  - Derm1M (HuggingFace, redlessone/Derm1M) — 1M image-text pairs for VLM pretraining
 
 Prerequisites:
-  pip install kaggle requests python-dotenv
+  pip install kaggle requests python-dotenv huggingface_hub
   # Set KAGGLE_API_TOKEN in .env at the project root
+  # Login to HuggingFace: huggingface-cli login (and accept Derm1M gated terms)
 
 Output structure:
   data/
     raw/kaggle_dermnet/          — full Kaggle download (23 classes)
     raw/skindisnet/              — full SkinDisNet download (6 classes)
+    raw/derm1m/                  — Derm1M dataset (~34 GB)
     processed/                   — final 6-class dataset
       melanoma/
       seborrheic_keratoses/
@@ -25,6 +28,7 @@ Output structure:
 import logging
 import os
 import shutil
+import subprocess
 import zipfile
 from pathlib import Path
 
@@ -45,19 +49,69 @@ load_dotenv(PROJECT_ROOT / ".env")
 RAW_DIR = PROJECT_ROOT / "data" / "raw"
 PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
 
-# Kaggle class folder names -> our class labels
+# Kaggle class folder names -> our class labels (14 classes)
 KAGGLE_CLASS_MAP = {
+    # Original 7 classes
     "Melanoma Skin Cancer Nevi and Moles": "melanoma",
     "Seborrheic Keratoses and other Benign Tumors": "seborrheic_keratoses",
     "Psoriasis pictures Lichen Planus and related diseases": "psoriasis",
     "Eczema Photos": "eczema",
     "Atopic Dermatitis Photos": "atopic_dermatitis",
+    # New classes
+    "Acne and Rosacea Photos": "acne",
+    "Tinea Ringworm Candidiasis and other Fungal Infections": "tinea",
+    "Poison Ivy Photos and other Contact Dermatitis": "contact_dermatitis",
+    "Urticaria Hives": "urticaria",
+    "Actinic Keratosis Basal Cell Carcinoma and other Malignant Lesions": "actinic_keratosis_bcc",
+    "Light Diseases and Disorders of Pigmentation": "vitiligo_pigmentation",
+    "Scabies Lyme Disease and other Infestations and Bites": "scabies",
 }
 
 # SkinDisNet Mendeley download URL (version 2)
 SKINDISNET_URL = "https://data.mendeley.com/public-api/zip/yj3md44hxg/download/2"
 SKINDISNET_CLASS = "Seborrheic Dermatitis"
 SKINDISNET_LABEL = "seborrheic_dermatitis"
+
+# Derm1M HuggingFace dataset (gated, ~34 GB)
+DERM1M_REPO = "redlessone/Derm1M"
+
+
+def download_derm1m():
+    """Download the Derm1M dataset from HuggingFace using huggingface-cli.
+
+    Requires: pip install huggingface_hub, huggingface-cli login,
+    and accepted gated access at https://huggingface.co/datasets/redlessone/Derm1M
+    """
+    derm1m_dir = RAW_DIR / "derm1m"
+
+    if derm1m_dir.exists() and any(derm1m_dir.glob("*.csv")):
+        log.info("Derm1M already downloaded at %s", derm1m_dir)
+        return derm1m_dir
+
+    derm1m_dir.mkdir(parents=True, exist_ok=True)
+
+    log.info("Downloading Derm1M from HuggingFace (~34 GB)...")
+    result = subprocess.run(
+        [
+            "huggingface-cli", "download",
+            DERM1M_REPO,
+            "--repo-type", "dataset",
+            "--local-dir", str(derm1m_dir),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"Derm1M download failed:\n{result.stderr}\n"
+            "Make sure:\n"
+            "  1. pip install huggingface_hub\n"
+            "  2. huggingface-cli login\n"
+            "  3. Accept gated terms at https://huggingface.co/datasets/redlessone/Derm1M"
+        )
+
+    log.info("Derm1M downloaded to %s", derm1m_dir)
+    return derm1m_dir
 
 
 def download_kaggle_dermnet():
@@ -180,17 +234,22 @@ def copy_images(src_dirs: list[Path], dst_dir: Path) -> int:
 def assemble_dataset():
     """Download sources and assemble the final 6-class dataset."""
     log.info("=" * 50)
-    log.info("Step 1: Download Kaggle DermNet")
+    log.info("Step 1: Download Derm1M (VLM pretraining)")
+    log.info("=" * 50)
+    derm1m_dir = download_derm1m()
+
+    log.info("=" * 50)
+    log.info("Step 2: Download Kaggle DermNet")
     log.info("=" * 50)
     kaggle_dir = download_kaggle_dermnet()
 
     log.info("=" * 50)
-    log.info("Step 2: Download SkinDisNet")
+    log.info("Step 3: Download SkinDisNet")
     log.info("=" * 50)
     skindisnet_dir = download_skindisnet()
 
     log.info("=" * 50)
-    log.info("Step 3: Assemble 6-class dataset")
+    log.info("Step 4: Assemble 6-class dataset")
     log.info("=" * 50)
 
     # Find Kaggle class directories

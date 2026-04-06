@@ -43,13 +43,40 @@ GALLERIES: dict[str, list[str]] = {
         f"{BASE}/images/atopic-dermatitis-images",
         f"{BASE}/images/atopic-flexural-eczema-images",
     ],
+    "acne": [
+        f"{BASE}/images/acne-vulgaris-images",
+    ],
+    "basal_cell_carcinoma": [
+        f"{BASE}/images/basal-cell-carcinoma-images",
+    ],
+    "melanoma": [
+        f"{BASE}/images/melanoma-in-situ-images",
+        f"{BASE}/images/nodular-melanoma-images",
+        f"{BASE}/images/superficial-spreading-melanoma-images",
+        f"{BASE}/images/acral-lentiginous-melanoma-images",
+    ],
+    "rosacea": [
+        f"{BASE}/images/rosacea-images",
+    ],
+    "vitiligo": [
+        f"{BASE}/images/vitiligo-images",
+    ],
+    "scabies": [
+        f"{BASE}/images/scabies-images",
+    ],
+    "eczema": [
+        f"{BASE}/images/discoid-eczema-images",
+    ],
+    "impetigo": [
+        f"{BASE}/images/impetigo-images",
+    ],
 }
 
 # Respectful delay between HTTP requests (seconds)
 REQUEST_DELAY = 1.0
 
 # Output root (relative to project root)
-OUTPUT_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "dermnet_scraped"
+OUTPUT_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "dataset" / "dermnet_nz"
 
 
 async def extract_image_urls(page, url: str) -> list[str]:

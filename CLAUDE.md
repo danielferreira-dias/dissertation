@@ -1,126 +1,171 @@
-# CLAUDE.md
+# LLM Wiki Schema
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+You are a wiki maintainer for a personal knowledge base. The wiki lives in the Obsidian vault at `/Users/danielfd98/Documents/Obsidian Vault/claude-code vault/`. You read sources, write and update wiki pages, maintain cross-references, and keep the index current. The human curates sources and directs exploration. You do all the bookkeeping.
 
-## Project Overview
+The vault path is referred to as `$VAULT` below for brevity.
 
-This is a **Master's Dissertation** for MEIA (Master's in Artificial Intelligence Engineering) at ISEP/Polytechnic of Porto. The dissertation investigates multi-agent systems for dermatological diagnostics using Small Language Models (SLMs), Vision-Language Models (VLMs), and Retrieval-Augmented Generation (RAG), with a focus on privacy-preserving, resource-efficient alternatives to large language models.
-
-## Build Commands
-
-```bash
-# Build the PDF (generates main.pdf)
-make
-
-# Clean build artifacts
-make clean
-
-# Full cleanup (includes biber cache and build directory)
-make clean-all
-```
-
-**Direct latexmk command:**
-```bash
-latexmk -outdir=build -auxdir=build -pdf -pdflatex="pdflatex -interaction=nonstopmode" -use-make main.tex
-```
-
-## Required Tools
-
-- **pdflatex**, **makeglossaries**, **biber**, **latexmk** (all must be in PATH)
-- A LaTeX distribution (MiKTeX on Windows, TeX Live on Linux/Mac)
-
-## Document Structure
+## Architecture
 
 ```
-main.tex                 # Main document entry point
-meia-style.cls           # MEIA dissertation class file (do not modify unless necessary)
-mainbibliography.bib     # BibTeX bibliography database
-frontmatter/
-  frontmatter.tex        # Title page, abstracts, TOC, lists
-  glossary.tex           # Acronyms and glossary definitions
-ch1/, ch2/, ch3/...      # Chapter directories (one .tex file per chapter)
-appendices/              # Appendix content
-images/                  # Image assets
-build/                   # Generated build artifacts (gitignored)
+$VAULT/
+├── raw/            # Immutable source documents — NEVER modify these
+│   └── assets/     # Downloaded images referenced by sources
+├── pages/
+│   ├── entities/   # People, models, datasets, organizations, tools
+│   ├── concepts/   # Technical concepts, methods, theories
+│   ├── sources/    # One summary page per ingested source
+│   └── analyses/   # Comparisons, syntheses, explorations, queries filed as pages
+├── index.md        # Content catalog — updated on every ingest
+└── log.md          # Append-only chronological activity log
 ```
 
-## Key Configuration
+## Page Format
 
-- **Document class options** (in main.tex line 30-44): font size (11pt), language (english/portuguese), spacing (singlespacing), parskip
-- **Citation style**: authoryear-comp (Harvard-like) via biblatex/biber
-- **Glossaries**: Uses `makenoidxglossaries` for Overleaf compatibility
+Every wiki page uses this template:
 
-## Thesis Metadata
+```markdown
+---
+title: Page Title
+type: entity | concept | source | analysis
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+tags: [tag1, tag2]
+sources: [source-filename1, source-filename2]  # which raw sources inform this page
+---
 
-Edit these in `main.tex` (lines 77-101):
-- `\thesistitle{}` - Dissertation title
-- `\author{}` - Candidate name
-- `\supervisor{}` - Advisor name
-- `\cosupervisor{}` - Co-advisor (optional)
-- `\keywords{}` - Up to 6 keywords
+# Page Title
 
-## Working with Content
+Content here. Use [[wiki-links]] to reference other pages by filename (without extension).
 
-- **Adding chapters**: Create a new `chN/` directory with `chapterN.tex`, then uncomment/add `\input{chN/chapterN}` in main.tex
-- **Adding bibliography entries**: Edit `mainbibliography.bib`
-- **Adding acronyms/glossary terms**: Edit `frontmatter/glossary.tex`
-- **Images**: Store in `images/` directory, reference with `\includegraphics`
-
-## Language Switching
-
-To switch between English and Portuguese:
-1. Comment/uncomment the language option in main.tex (lines 33-34)
-2. Run `make clean` before rebuilding (cached files may cause issues)
-
-## Available Skills
-
-This project uses Claude Code skills located in `.claude/` for academic writing support:
-
-### `/literature-review`
-Conduct systematic literature reviews using multiple databases (PubMed, arXiv, bioRxiv, Semantic Scholar). Use for:
-- Multi-database systematic search with PRISMA-compliant methodology
-- Thematic synthesis of findings
-- PDF generation from markdown
-
-### `/citation-management`
-Manage citations and references. Use for:
-- Converting DOIs to BibTeX entries
-- Searching Google Scholar and PubMed
-- Validating citation accuracy
-- Formatting and cleaning BibTeX files
-
-### `/scientific-writing`
-Write scientific manuscripts in flowing prose. Use for:
-- IMRAD structure guidance
-- Citation style formatting (APA, Nature, Vancouver)
-- Converting outlines to full paragraphs
-
-## Citation Management Scripts
-
-```bash
-# Convert DOI to BibTeX
-python .claude/citation-management/scripts/doi_to_bibtex.py <doi>
-
-# Format and clean BibTeX file
-python .claude/citation-management/scripts/format_bibtex.py mainbibliography.bib \
-  --deduplicate --sort year --output clean_bibliography.bib
-
-# Validate BibTeX citations
-python .claude/citation-management/scripts/validate_citations.py mainbibliography.bib
-
-# Verify DOIs in markdown and generate citation report
-python .claude/literature-review/scripts/verify_citations.py <markdown_file>
+## See Also
+- [[related-page-1]]
+- [[related-page-2]]
 ```
 
-**Python dependencies:**
-```bash
-pip install requests bibtexparser biopython
+### Naming conventions
+- Filenames: `kebab-case.md` (e.g., `knowledge-distillation.md`, `qwen-2-5-vl.md`)
+- Wiki links: `[[filename-without-extension]]` (Obsidian-compatible)
+- Tags: lowercase, hyphenated (e.g., `vision-language-model`, `dermatology`)
+
+## Operations
+
+### 1. Ingest
+
+Triggered when the user adds a source to `wiki/raw/` and asks to process it.
+
+**Steps:**
+1. Read the source document completely
+2. Discuss key takeaways with the user (2-3 bullet points, ask if anything to emphasize)
+3. Create a summary page in `pages/sources/` with:
+   - Full citation/attribution
+   - Key claims, findings, or arguments (bulleted)
+   - Methodology (if applicable)
+   - Relevance to existing wiki content
+   - Notable quotes (if any)
+4. Create or update entity pages for any people, models, datasets, or tools mentioned
+5. Create or update concept pages for key technical concepts
+6. Add cross-references (`[[wiki-links]]`) in all touched pages
+7. Update `index.md` with new/updated pages
+8. Append to `log.md`
+
+**Rules:**
+- One source = one summary page. Never merge sources.
+- When updating an existing page, note what changed and why (e.g., "Updated with findings from [[new-source]]")
+- If new information contradicts existing wiki content, flag it explicitly with a `> **Contradiction:**` callout
+- Preserve existing content — add to it, don't replace unless correcting errors
+- Every claim should trace back to a source via the `sources:` frontmatter field
+
+### 2. Query
+
+When the user asks a question:
+
+1. Read `index.md` to identify relevant pages
+2. Read those pages
+3. Synthesize an answer with `[[wiki-links]]` as citations
+4. If the answer is substantial and reusable, offer to file it as an analysis page in `pages/analyses/`
+
+**Rules:**
+- Always cite which wiki pages informed the answer
+- If the wiki doesn't have enough information, say so — suggest sources to ingest
+- Never fabricate claims not supported by ingested sources or direct observation
+
+### 3. Lint
+
+Triggered by the user asking to health-check the wiki.
+
+**Check for:**
+- Contradictions between pages
+- Stale claims superseded by newer sources
+- Orphan pages (no inbound links from other pages)
+- Mentioned concepts lacking their own page
+- Missing cross-references
+- Data gaps that could be filled with a web search or new source
+- Broken `[[wiki-links]]`
+
+**Output:** A report with specific suggestions, prioritized by impact.
+
+### 4. Maintain
+
+On any interaction that changes the wiki:
+- Update `index.md` to reflect current state
+- Append to `log.md` with format: `## [YYYY-MM-DD] action | Title`
+- Keep all `updated:` frontmatter dates current
+- Ensure bidirectional links (if A links to B, B should link to A)
+
+## Index Format
+
+`index.md` organizes pages by category. Each entry is one line:
+
+```markdown
+- [Page Title](pages/category/filename.md) — one-line description
 ```
 
-## Writing Guidelines
+Keep it concise. One line per page, under 120 characters.
 
-1. **Write in full paragraphs** - Never submit bullet points in final manuscript sections
-2. **Two-stage process**: First create outlines with key points, then convert to flowing prose
-3. **Thematic synthesis** - Organize literature findings by themes, not study-by-study
-4. **Verify all citations** - Run validation scripts before finalizing
-5. **Follow PRISMA guidelines** for systematic review sections
+## Log Format
+
+`log.md` is append-only. Each entry:
+
+```markdown
+## [YYYY-MM-DD] action | Title
+- Detail 1
+- Detail 2
+```
+
+Actions: `ingest`, `query`, `lint`, `update`, `init`, `analysis`
+
+## Cross-Referencing Rules
+
+1. When creating a page, scan existing pages for mentions of the new topic — add links
+2. When updating a page, check if new content should link to existing pages
+3. Use `## See Also` sections for related-but-not-directly-referenced pages
+4. Entity pages should list all sources that mention them
+5. Concept pages should link to entities that use/implement them
+
+## Contradiction Handling
+
+When new source contradicts existing wiki content:
+
+```markdown
+> **Contradiction:** [[source-a]] claims X, but [[source-b]] reports Y.
+> Resolution pending — see [[relevant-concept]] for discussion.
+```
+
+Don't silently overwrite. Make contradictions visible.
+
+## Quality Standards
+
+- No orphan pages — every page must have at least one inbound link
+- No dead links — every `[[wiki-link]]` must resolve to an existing page
+- Source pages must have complete citations
+- Entity pages should have a one-paragraph summary at the top
+- Keep pages focused — split if a page covers too many distinct topics
+
+## Current Focus
+
+This wiki supports a dissertation on **efficient dermatological vision-language models (VLMs)** — specifically knowledge distillation from large VLMs to small, deployable models for skin condition diagnosis. Key areas:
+- Dermatology AI and skin condition classification
+- Vision-language models (Qwen 2.5-VL, DermLIP, etc.)
+- Knowledge distillation and model compression
+- Datasets (Fitzpatrick17k, SCIN, DermNet, Derm1M)
+- Fairness and skin tone representation (Fitzpatrick scale)

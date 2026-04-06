@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Dermatology Descriptions Viewer</title>
+<style>
+    body { font-family: -apple-system, sans-serif; background: #1a1a1a; color: #e0e0e0; padding: 20px; }
+    h1 { text-align: center; color: #fff; }
+    .stats { text-align: center; color: #888; margin-bottom: 30px; }
+    .card { display: flex; gap: 20px; background: #2a2a2a; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    .card img { width: 300px; height: 300px; object-fit: contain; border-radius: 8px; background: #111; }
+    .info { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+    .label { font-size: 18px; font-weight: bold; color: #4fc3f7; text-transform: uppercase; }
+    .confidence { font-size: 14px; padding: 2px 8px; border-radius: 4px; width: fit-content; }
+    .confidence.high { background: #2e7d32; color: #fff; }
+    .confidence.medium { background: #f57f17; color: #fff; }
+    .confidence.low { background: #c62828; color: #fff; }
+    .fst { font-size: 14px; color: #aaa; }
+    p { line-height: 1.6; color: #ccc; }
+</style>
+</head>
+<body>
+    <h1>Dermatology Descriptions</h1>
+    <div class="stats">14 images</div>
+    
+        <div class="card">
+            <img src="file:///Users/danielfd98/Documents/uni-projs/dissertation/data/dataset/train/melanoma/-1270005364739629348.png" alt="melanoma">
+            <div class="info">
+                <span class="label">melanoma</span>
+                <span class="confidence high">Confidence: high</span>
+                <span class="fst">Fitzpatrick: 2</span>
+                <p>The image displays multiple atypical pigmented lesions on the arm. A prominent large lesion on the left exhibits striking asymmetry, highly irregular and notched borders, and significant color variability with shades of dark brown and black. Its size appears greater than 6mm. Additionally, a smaller, somewhat raised, irregularly shaped nodule or papule is visible centrally, featuring speckled light to dark brown pigmentation. These visual features—asymmetry, border irregularity, color variation, and apparent diameter exceeding 6mm, along with the potential for raised components—strongly align with the ABCDE criteria for melanoma.</p>
+            </div>
+        </div>
+        <div class="card">
+            <img src="file:///Users/danielfd98/Documents/uni-projs/dissertation/data/dataset/train/melanoma/-2810323898723349690.png" alt="melanoma">
+            <div class="info">
+                <span class="label">melanoma</span>
+                <span class="confidence high">Confidence: high</span>
+                <span class="fst">Fitzpatrick: 4</span>
+                <p>The image shows a solitary, irregularly shaped pigmented lesion, appearing as a macule or slightly elevated patch on the lower leg or forearm. The lesion exhibits asymmetry and marked border irregularity, particularly evident on its superior and right aspects where the borders are notched and ill-defined. There is significant color variegation within the lesion, displaying multiple shades of brown, including lighter tan, darker brown, and an uneven distribution of pigment. The surrounding skin has multiple smaller, benign-appearing pigmented macules. These features, specifically the asymmetry, irregular borders, and color variation, strongly support the confirmed diagnosis of Melanoma.</p>
+            </div>
+        </div>
+        <div class="card">
+            <img src="file:///Users/danielfd98/Documents/uni-projs/dissertation/data/dataset/train/melanoma/-4232163168478792914.png" alt="melanoma">
+            <div class="info">
+                <span class="label">melanoma</span>
+                <span class="confidence high">Confidence: high</span>
+                <span class="fst">Fitzpatrick: 2</span>
+                <p>The image reveals multiple irregular, pigmented macules and papules on the patient's arm. These lesions exhibit significant asymmetry and ill-defined, irregular borders. There is marked color variegation, encompassing reddish-brown, dark brown, and black hues, a key feature. Some areas appear slightly raised, suggesting papular or early nodular components. The overall presentation, characterized by asymmetry, border irregularity, and color variegation, strongly aligns with the ABCDE criteria highly suspicious for the confirmed diagnosis of Melanoma.</p>
+            </div>
+        </div>
+        <div class="card">
+            <img src="file:///Users/danielfd98/Documents/uni-projs/dissertation/data/dataset/train/melanoma/051e5c8ce730d6a81961ca551c9fdb2a.jpg" alt="melanoma">
+            <div class="info">
+                <span class="label">melanoma</span>
+                <span class="confidence high">Confidence: high</span>
+                <span class="fst">Fitzpatrick: 4</span>
+                <p>The image displays a large, asymmetrical, hyperpigmented patch or macule with highly irregular borders. The lesion exhibits marked color variegation, predominantly very dark brown to black at the periphery, transitioning to a central ulcerated and possibly necrotic area with yellowish and reddish-brown exudate. The central portion appears as a raised, eroded nodule. The surrounding skin is a medium brown complexion. These features, including asymmetry, irregular borders, multiple colors, large diameter, and the presence of ulceration/nodularity (suggesting evolution), are highly concerning and strongly support the diagnosis of malignant melanoma.</p>
+            </div>
+        </div>
+        <div class="card">
+            <img src="file:///Users/danielfd98/Documents/uni-projs/dissertation/data/dataset/train/melanoma/0e9e79e3884112fdccf813ffebd698ea.jpg" alt="melanoma">
+            <div class="info">
+                <span class="label">melanoma</span>
+                <span class="confidence medium">Confidence: medium</span>
+                <span class="fst">Fitzpatrick: 3</span>
+                <p>The image displays a large, exophytic, irregularly shaped nodular mass or plaque. The lesion's color ranges from pink to reddish-violaceous, with prominent areas of ulceration, bleeding, and yellowish-brown crusting. Its texture appears irregular and somewhat verrucous, with raw, eroded surfaces visible. This solitary lesion is situated in what appears to be an intertriginous area. The rapid growth implied by its size, the irregular borders, and especially the presence of ulceration and hemorrhage are highly suspicious features supporting a malignant diagnosis, consistent with a nodular or amelanotic melanoma.</p>
+            </div>
+        </div>
+        <div class="card">
+            <img src="file:///Users/danielfd98/Documents/uni-projs/dissertation/data/dataset/train/basal_cell_carcinoma/-1711077606342056338.png" alt="basal_cell_carcinoma">
+            <div class="info">
+                <span class="label">basal_cell_carcinoma</span>
+                <span class="confidence high">Confidence: high</span>
+                <span class="fst">Fitzpatrick: 2</span>
+                <p>The image shows a solitary, nummular lesion on the perioral chin/lower cheek. It presents as an erythematous plaque with a raised, rolled, and subtly pearly border. The central area of the lesion appears yellowish, slightly depressed, and crusted, indicative of central ulceration or erosion. These visual features, including the classic rolled, pearly border and central ulceration in a sun-exposed area, strongly support the diagnosis of Basal Cell Carcinoma, likely a nodular or ulcerative subtype.</p>
+            </div>
+        </div>
+        <div class="card">
+            <img src="file:///Users/danielfd98/Documents/uni-projs/dissertation/data/dataset/train/basal_cell_carcinoma/-220649468572111832.png" alt="basal_cell_carcinoma">
+            <div class="info">
+                <span class="label">basal_cell_carcinoma</span>
+                <span class="confidence high">Confidence: high</span>
+                <span class="fst">Fitzpatrick: 3</span>
+                <p>The image displays a solitary, ulcerated nodule with a central bright red, irregular erosion. The lesion is notably surrounded by a raised, slightly translucent, and somewhat pearly border, a classic 'rolled border' feature. This presentation, characterized by a central ulceration resembling a 'rodent ulcer' and a pearly, rolled edge, strongly supports the confirmed diagnosis of nodular Basal Cell Carcinoma.</p>
+            </div>
+        </div>
+        <div class="card">
+            <img src="file:///Users/danielfd98/Documents/uni-projs/dissertation/data/dataset/train/basal_cell_carcinoma/-320758069593813618.png" alt="basal_cell_carcinoma">
+            <div class="info">
+                <span class="label">basal_cell_carcinoma</span>
+                <span class="confidence high">Confidence: high</span>
+                <span class="fst">Fitzpatrick: 2</span>
+                <p>The image displays a solitary, irregularly shaped, erythematous to violaceous papule or small nodule on hair-bearing skin, likely an extremity. The lesion exhibits a central area of intense reddish-purplish discoloration, strongly suggestive of either significant vascularity or superficial erosion/ulceration. While the classic pearly translucency and rolled borders often associated with Basal Cell Carcinoma are not definitively clear at this resolution, the irregular morphology and the appearance of central ulceration or crusting are common features of more advanced or ulcerated Basal Cell Carcinomas, consistent with the confirmed diagnosis.</p>
+            </div>
+        </div>
+        <div class="card">
+            <img src="file:///Users/danielfd98/Documents/uni-projs/dissertation/data/dataset/train/basal_cell_carcinoma/-8096874979386526370.png" alt="basal_cell_carcinoma">
+            <div class="info">
+                <span class="label">basal_cell_carcinoma</span>
+                <span class="confidence high">Confidence: high</span>
+                <span class="fst">Fitzpatrick: 2</span>
+                <p>The image displays a solitary, erythematous to reddish-pink plaque-like lesion on what appears to be an extremity. The lesion has a slightly raised, irregular surface with some areas exhibiting subtle pearly translucency and fine telangiectasias, particularly at the periphery. There might be some minimal scaling or crusting. The borders are somewhat ill-defined. These characteristics, including the pearly appearance, telangiectasias, and chronic plaque morphology on fair skin, are highly suggestive of Basal Cell Carcinoma, likely a superficial or nodular type.</p>
+            </div>
+        </div>
+        <div class="card">
+            <img src="file:///Users/danielfd98/Documents/uni-projs/dissertation/data/dataset/train/psoriasis/-1289056757877756953.png" alt="psoriasis">
+            <div class="info">
+                <span class="label">psoriasis</span>
+                <span class="confidence high">Confidence: high</span>
+                <span class="fst">Fitzpatrick: 2</span>
+                <p>The image displays multiple well-demarcated, erythematous plaques with overlying thick, silvery-white scales. These plaques vary in size and are distributed along the forearm. Some smaller, reddish papules are also visible, particularly on the distal part of the forearm. The characteristic combination of sharply defined erythematous plaques with thick, silvery scales strongly supports the diagnosis of Psoriasis (inflammatory). The extensor surface of the arm is a common location for psoriasis.</p>
+            </div>
+        </div>
+        <div class="card">
+            <img src="file:///Users/danielfd98/Documents/uni-projs/dissertation/data/dataset/train/psoriasis/-1322345273347810072.png" alt="psoriasis">
+            <div class="info">
+                <span class="label">psoriasis</span>
+                <span class="confidence high">Confidence: high</span>
+                <span class="fst">Fitzpatrick: 2</span>
+                <p>The image displays numerous erythematous to violaceous papules and small, coalescing plaques distributed on the arm. Many lesions show fine, whitish scaling, particularly visible in clusters. Some areas appear excoriated with potential crusting. The well-demarcated, reddish papules and plaques with overlying fine scale are consistent visual features supporting a diagnosis of Psoriasis, particularly an inflammatory subtype due to the prominence of erythematous papules and lesser degree of thick silvery scale.</p>
+            </div>
+        </div>
+        <div class="card">
+            <img src="file:///Users/danielfd98/Documents/uni-projs/dissertation/data/dataset/train/psoriasis/-1741298902959469723.png" alt="psoriasis">
+            <div class="info">
+                <span class="label">psoriasis</span>
+                <span class="confidence high">Confidence: high</span>
+                <span class="fst">Fitzpatrick: 6</span>
+                <p>The image displays several well-demarcated, hyperpigmented to violaceous plaques with prominent overlying silvery-white scale on the extensor surface of the forearm. The affected skin appears thickened and rough. These characteristic features, including the sharply defined lesions, the distinct silvery scaling, and the inflammatory color changes appropriate for darker skin (hyperpigmentation/violaceous), strongly support the confirmed diagnosis of inflammatory Psoriasis. Some smaller, erythematous papules also appear to be coalescing into larger plaques.</p>
+            </div>
+        </div>
+        <div class="card">
+            <img src="file:///Users/danielfd98/Documents/uni-projs/dissertation/data/dataset/train/psoriasis/-2538731880524128360.png" alt="psoriasis">
+            <div class="info">
+                <span class="label">psoriasis</span>
+                <span class="confidence high">Confidence: high</span>
+                <span class="fst">Fitzpatrick: 2</span>
+                <p>The image displays multiple well-demarcated, irregularly shaped plaques on a hirsute thigh/hip region. These lesions are erythematous to violaceous in color, with a visibly rough or scaly surface texture, consistent with the characteristic silvery scaling of psoriasis. The inflammatory appearance and distinct borders of the plaques strongly support the diagnosis of Psoriasis, particularly plaque psoriasis. The lesions vary in size and distribution, with some appearing somewhat confluent.</p>
+            </div>
+        </div>
+        <div class="card">
+            <img src="file:///Users/danielfd98/Documents/uni-projs/dissertation/data/dataset/train/psoriasis/-3998348922889802198.png" alt="psoriasis">
+            <div class="info">
+                <span class="label">psoriasis</span>
+                <span class="confidence high">Confidence: high</span>
+                <span class="fst">Fitzpatrick: 5</span>
+                <p>The image reveals multiple well-demarcated papules and plaques scattered across the trunk. These lesions present with a reddish-brown to violaceous base, characteristic of inflammation on darker skin tones, and are overlaid with prominent silvery-white scales. Some lesions display linear morphology, suggestive of Koebner phenomenon. Additionally, areas of post-inflammatory hyperpigmentation are observed. These classic features of scaly, well-demarcated violaceous plaques and potential Koebnerization strongly support the diagnosis of inflammatory Psoriasis.</p>
+            </div>
+        </div>
+</body>
+</html>
