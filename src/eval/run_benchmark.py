@@ -1,10 +1,9 @@
 """
-Run a model against a benchmark and save results.
+Run a model against a benchmark and save results using vLLM for fast inference.
 
 Usage:
-  python src/eval/run_benchmark.py --model medgemma-4b --benchmark fitzpatrick17k
+  python src/eval/run_benchmark.py --model gemma4-e4b --benchmark fitzpatrick17k
   python src/eval/run_benchmark.py --model qwen3.5-4b --benchmark mm_skin_vqa
-  python src/eval/run_benchmark.py --model gemma4-e4b --benchmark confusion_triads
   python src/eval/run_benchmark.py --all  # run all models on all benchmarks
 
 Results saved to: final/results/<model>/<benchmark>/
@@ -12,97 +11,74 @@ Results saved to: final/results/<model>/<benchmark>/
 
 import argparse
 import json
+import re
 import time
 from pathlib import Path
 
 import pandas as pd
-import torch
 from PIL import Image
-from tqdm import tqdm
-from transformers import AutoModelForCausalLM, AutoProcessor, AutoTokenizer
+from transformers import AutoProcessor
+from vllm import LLM, SamplingParams
 
 from config import BENCHMARKS, CLASSIFICATION_PROMPT, MODELS, RESULTS_DIR, TRIAD_PROMPT
 
+BATCH_SIZE = 16
+
 
 def load_model(model_key: str):
-    """Load model and processor from HuggingFace."""
+    """Load model with vLLM and processor for chat template."""
     model_cfg = MODELS[model_key]
     hf_id = model_cfg["hf_id"]
-    print(f"Loading {hf_id}...")
+    print(f"Loading {hf_id} with vLLM...")
 
     processor = AutoProcessor.from_pretrained(hf_id, trust_remote_code=True)
-    model = AutoModelForCausalLM.from_pretrained(
-        hf_id,
-        torch_dtype=torch.float16,
-        device_map="auto",
+
+    llm = LLM(
+        model=hf_id,
+        download_dir="/workspace/hf_cache",
+        max_model_len=4096,
         trust_remote_code=True,
+        dtype="float16",
+        gpu_memory_utilization=0.9,
     )
-    model.eval()
-    print(f"Loaded {hf_id} on {model.device}")
-    return model, processor
+    print(f"Loaded {hf_id}")
+    return llm, processor
 
 
-def run_inference(model, processor, image_path: str, prompt: str) -> str:
-    """Run a single inference and return the model's text response."""
-    image = Image.open(image_path)
-    image.verify()  # Check image is valid
-    image = Image.open(image_path).convert("RGB")  # Reopen after verify
+def build_prompt(processor, image_path: str, prompt: str) -> tuple[str, Image.Image]:
+    """Build chat prompt using the processor's template and load image."""
+    image = Image.open(image_path).convert("RGB")
 
-    # Build messages in chat format
     messages = [
         {
             "role": "user",
             "content": [
-                {"type": "image", "image": image},
+                {"type": "image", "image": image_path},
                 {"type": "text", "text": prompt},
             ],
         }
     ]
 
-    # Apply chat template
-    text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    chat_prompt = processor.apply_chat_template(
+        messages, tokenize=False, add_generation_prompt=True
+    )
+    return chat_prompt, image
 
-    # Process inputs — handle different model architectures
-    try:
-        inputs = processor(
-            text=[text],
-            images=[image],
-            return_tensors="pt",
-            padding=True,
-        )
-    except Exception:
-        # Fallback for models that need different image processing
-        inputs = processor(
-            text=text,
-            images=image,
-            return_tensors="pt",
-        )
 
-    # Move to device, only tensor values
-    inputs = {k: v.to(model.device) if hasattr(v, "to") else v for k, v in inputs.items()}
+def run_batch(llm, prompts_and_images: list[tuple[str, Image.Image]]) -> list[str]:
+    """Run a batch of prompts through vLLM and return responses."""
+    sampling = SamplingParams(max_tokens=512, temperature=0)
 
-    # Filter out kwargs the model doesn't accept
-    input_ids = inputs.pop("input_ids")
-    attention_mask = inputs.pop("attention_mask", None)
+    requests = [
+        {
+            "prompt": prompt,
+            "multi_modal_data": {"image": image},
+        }
+        for prompt, image in prompts_and_images
+    ]
 
-    generate_kwargs = {"input_ids": input_ids, "max_new_tokens": 512, "do_sample": False}
-    if attention_mask is not None:
-        generate_kwargs["attention_mask"] = attention_mask
-
-    # Pass remaining inputs (pixel_values, image_grid_thw, etc.) only if model accepts them
-    import inspect
-    model_forward_params = set(inspect.signature(model.forward).parameters.keys())
-    for k, v in inputs.items():
-        if k in model_forward_params:
-            generate_kwargs[k] = v
-
-    with torch.no_grad():
-        output_ids = model.generate(**generate_kwargs)
-
-    # Decode only the generated tokens
-    generated = output_ids[0][input_ids.shape[1]:]
-    response = processor.decode(generated, skip_special_tokens=True)
-    return response
+    outputs = llm.generate(requests, sampling_params=sampling)
+    return [out.outputs[0].text for out in outputs]
 
 
 def parse_json_response(text: str) -> dict | None:
@@ -114,8 +90,6 @@ def parse_json_response(text: str) -> dict | None:
     try:
         return json.loads(text)
     except json.JSONDecodeError:
-        # Try to find JSON in the response
-        import re
         match = re.search(r"\{[^}]+\}", text, re.DOTALL)
         if match:
             try:
@@ -125,10 +99,14 @@ def parse_json_response(text: str) -> dict | None:
     return None
 
 
+def normalize_name(name: str) -> str:
+    return str(name).lower().strip().replace(" ", "_").replace("-", "_").replace("/", "_")
+
+
 # ── Benchmark runners ───────────────────────────────────────────────────────
 
 
-def run_fitzpatrick(model, processor, model_key: str):
+def run_fitzpatrick(llm, processor, model_key: str):
     """Run Fitzpatrick17k classification benchmark."""
     bench = BENCHMARKS["fitzpatrick17k"]
     metadata = pd.read_csv(bench["metadata"])
@@ -146,37 +124,65 @@ def run_fitzpatrick(model, processor, model_key: str):
     remaining = metadata[~metadata["id"].astype(str).isin(done)]
     print(f"Fitzpatrick17k: {len(done)} done, {len(remaining)} remaining")
 
-    def normalize(name):
-        return str(name).lower().strip().replace(" ", "_").replace("-", "_").replace("/", "_")
+    # Build all prompts
+    batch = []
+    batch_meta = []
+    processed = 0
 
     with open(results_file, "a") as out:
-        for _, row in tqdm(remaining.iterrows(), total=len(remaining), desc="Fitzpatrick17k"):
-            disease = normalize(row["disease"])
+        for _, row in remaining.iterrows():
+            disease = normalize_name(row["disease"])
             img_path = bench["path"] / disease / row["skincap_file_path"]
 
             if not img_path.exists():
                 continue
 
             try:
-                response = run_inference(model, processor, str(img_path), CLASSIFICATION_PROMPT)
-                parsed = parse_json_response(response)
+                prompt, image = build_prompt(processor, str(img_path), CLASSIFICATION_PROMPT)
+                batch.append((prompt, image))
+                batch_meta.append(row)
+            except Exception as e:
+                print(f"\nSkipping {img_path}: {e}")
+                continue
 
+            if len(batch) >= BATCH_SIZE:
+                responses = run_batch(llm, batch)
+                for resp, meta_row in zip(responses, batch_meta):
+                    parsed = parse_json_response(resp)
+                    entry = {
+                        "image_id": str(meta_row["id"]),
+                        "ground_truth": meta_row["disease"],
+                        "fitzpatrick_scale": meta_row.get("fitzpatrick_scale"),
+                        "raw_response": resp,
+                        "parsed": parsed,
+                    }
+                    out.write(json.dumps(entry) + "\n")
+                out.flush()
+                processed += len(batch)
+                print(f"\r  Processed {processed}/{len(remaining)}", end="", flush=True)
+                batch = []
+                batch_meta = []
+
+        # Process remaining
+        if batch:
+            responses = run_batch(llm, batch)
+            for resp, meta_row in zip(responses, batch_meta):
+                parsed = parse_json_response(resp)
                 entry = {
-                    "image_id": str(row["id"]),
-                    "ground_truth": row["disease"],
-                    "fitzpatrick_scale": row.get("fitzpatrick_scale"),
-                    "raw_response": response,
+                    "image_id": str(meta_row["id"]),
+                    "ground_truth": meta_row["disease"],
+                    "fitzpatrick_scale": meta_row.get("fitzpatrick_scale"),
+                    "raw_response": resp,
                     "parsed": parsed,
                 }
                 out.write(json.dumps(entry) + "\n")
-                out.flush()
-            except Exception as e:
-                print(f"\nError: {e}")
+            out.flush()
+            processed += len(batch)
 
-    print(f"Results saved to {results_file}")
+    print(f"\nFitzpatrick17k: {processed} predictions saved to {results_file}")
 
 
-def run_mm_skin_vqa(model, processor, model_key: str):
+def run_mm_skin_vqa(llm, processor, model_key: str):
     """Run MM-Skin VQA benchmark."""
     bench = BENCHMARKS["mm_skin_vqa"]
     vqa_df = pd.read_csv(bench["metadata"])
@@ -194,8 +200,12 @@ def run_mm_skin_vqa(model, processor, model_key: str):
     remaining_idx = [i for i in range(len(vqa_df)) if i not in done]
     print(f"MM-Skin VQA: {len(done)} done, {len(remaining_idx)} remaining")
 
+    batch = []
+    batch_meta = []
+    processed = 0
+
     with open(results_file, "a") as out:
-        for idx in tqdm(remaining_idx, desc="MM-Skin VQA"):
+        for idx in remaining_idx:
             row = vqa_df.iloc[idx]
             img_filename = str(row["image"]).replace("dataset/", "")
             img_path = bench["path"] / img_filename
@@ -203,28 +213,37 @@ def run_mm_skin_vqa(model, processor, model_key: str):
             if not img_path.exists():
                 continue
 
-            question = row["question"]
-            ground_truth = row["answer"]
-
             try:
-                response = run_inference(model, processor, str(img_path), question)
-
-                entry = {
-                    "index": idx,
-                    "image": img_filename,
-                    "question": question,
-                    "ground_truth": ground_truth,
-                    "prediction": response,
-                }
-                out.write(json.dumps(entry) + "\n")
-                out.flush()
+                prompt, image = build_prompt(processor, str(img_path), row["question"])
+                batch.append((prompt, image))
+                batch_meta.append({"index": idx, "image": img_filename,
+                                   "question": row["question"], "ground_truth": row["answer"]})
             except Exception as e:
-                print(f"\nError: {e}")
+                continue
 
-    print(f"Results saved to {results_file}")
+            if len(batch) >= BATCH_SIZE:
+                responses = run_batch(llm, batch)
+                for resp, meta in zip(responses, batch_meta):
+                    entry = {**meta, "prediction": resp}
+                    out.write(json.dumps(entry) + "\n")
+                out.flush()
+                processed += len(batch)
+                print(f"\r  Processed {processed}/{len(remaining_idx)}", end="", flush=True)
+                batch = []
+                batch_meta = []
+
+        if batch:
+            responses = run_batch(llm, batch)
+            for resp, meta in zip(responses, batch_meta):
+                entry = {**meta, "prediction": resp}
+                out.write(json.dumps(entry) + "\n")
+            out.flush()
+            processed += len(batch)
+
+    print(f"\nMM-Skin VQA: {processed} predictions saved to {results_file}")
 
 
-def run_confusion_triads(model, processor, model_key: str):
+def run_confusion_triads(llm, processor, model_key: str):
     """Run confusion triads evaluation."""
     bench = BENCHMARKS["confusion_triads"]
     results_dir = RESULTS_DIR / model_key / "confusion_triads"
@@ -238,7 +257,6 @@ def run_confusion_triads(model, processor, model_key: str):
                 entry = json.loads(line)
                 done.add(entry.get("image_path"))
 
-    # Collect all test images
     image_exts = {".jpg", ".jpeg", ".png", ".webp"}
     test_images = []
     for cls_dir in sorted(bench["path"].iterdir()):
@@ -250,24 +268,51 @@ def run_confusion_triads(model, processor, model_key: str):
 
     print(f"Confusion triads: {len(done)} done, {len(test_images)} remaining")
 
-    with open(results_file, "a") as out:
-        for img in tqdm(test_images, desc="Confusion triads"):
-            try:
-                response = run_inference(model, processor, img["path"], TRIAD_PROMPT)
-                parsed = parse_json_response(response)
+    batch = []
+    batch_meta = []
+    processed = 0
 
+    with open(results_file, "a") as out:
+        for img in test_images:
+            try:
+                prompt, image = build_prompt(processor, img["path"], TRIAD_PROMPT)
+                batch.append((prompt, image))
+                batch_meta.append(img)
+            except Exception as e:
+                continue
+
+            if len(batch) >= BATCH_SIZE:
+                responses = run_batch(llm, batch)
+                for resp, meta in zip(responses, batch_meta):
+                    parsed = parse_json_response(resp)
+                    entry = {
+                        "image_path": meta["path"],
+                        "ground_truth": meta["label"],
+                        "raw_response": resp,
+                        "parsed": parsed,
+                    }
+                    out.write(json.dumps(entry) + "\n")
+                out.flush()
+                processed += len(batch)
+                print(f"\r  Processed {processed}/{len(test_images)}", end="", flush=True)
+                batch = []
+                batch_meta = []
+
+        if batch:
+            responses = run_batch(llm, batch)
+            for resp, meta in zip(responses, batch_meta):
+                parsed = parse_json_response(resp)
                 entry = {
-                    "image_path": img["path"],
-                    "ground_truth": img["label"],
-                    "raw_response": response,
+                    "image_path": meta["path"],
+                    "ground_truth": meta["label"],
+                    "raw_response": resp,
                     "parsed": parsed,
                 }
                 out.write(json.dumps(entry) + "\n")
-                out.flush()
-            except Exception as e:
-                print(f"\nError: {e}")
+            out.flush()
+            processed += len(batch)
 
-    print(f"Results saved to {results_file}")
+    print(f"\nConfusion triads: {processed} predictions saved to {results_file}")
 
 
 # ── Main ────────────────────────────────────────────────────────────────────
@@ -284,7 +329,11 @@ def main():
     parser.add_argument("--model", choices=list(MODELS.keys()), help="Model to evaluate")
     parser.add_argument("--benchmark", choices=list(BENCHMARKS.keys()), help="Benchmark to run")
     parser.add_argument("--all", action="store_true", help="Run all models on all benchmarks")
+    parser.add_argument("--batch-size", type=int, default=BATCH_SIZE, help="Batch size for inference")
     args = parser.parse_args()
+
+    global BATCH_SIZE
+    BATCH_SIZE = args.batch_size
 
     if args.all:
         pairs = [(m, b) for m in MODELS for b in BENCHMARKS]
@@ -293,19 +342,29 @@ def main():
     else:
         parser.error("Specify --model and --benchmark, or --all")
 
+    current_model_key = None
+    llm = None
+    processor = None
+
     for model_key, bench_key in pairs:
         print(f"\n{'='*60}")
         print(f"Model: {model_key} | Benchmark: {bench_key}")
         print(f"{'='*60}")
 
-        model, processor = load_model(model_key)
-        runner = BENCHMARK_RUNNERS[bench_key]
-        runner(model, processor, model_key)
+        # Only reload model if it changed
+        if model_key != current_model_key:
+            if llm is not None:
+                del llm
+                import gc
+                gc.collect()
+            llm, processor = load_model(model_key)
+            current_model_key = model_key
 
-        # Free GPU memory between models
-        del model
-        del processor
-        torch.cuda.empty_cache() if torch.cuda.is_available() else None
+        t0 = time.time()
+        runner = BENCHMARK_RUNNERS[bench_key]
+        runner(llm, processor, model_key)
+        elapsed = time.time() - t0
+        print(f"  Time: {elapsed/60:.1f} minutes")
 
 
 if __name__ == "__main__":
