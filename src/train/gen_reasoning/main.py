@@ -45,16 +45,22 @@ INSTRUCTIONS:
 - Ignore any watermarks, logos, or text overlays on the image. Focus only on the visible skin condition.
 - Do NOT mention or reference any watermarks in your response.
 - The confirmed expert diagnosis for this image is: {diagnosis} ({category}).
-- Your job is to describe the visual features that support this diagnosis.
+- Your job is to describe the visual features that support this diagnosis using separate structured attributes.
 - If the image quality is poor or features are ambiguous, still describe what you observe and note the limitation.
 - Adapt your description to the patient's skin tone. Avoid assuming light skin presentation (e.g., use "violaceous" or "hyperpigmented" instead of "erythematous" when appropriate for darker skin).
-- IMPORTANT: If the image clearly shows a DIFFERENT condition than {diagnosis} (e.g., a keloid labeled as seborrheic keratosis), set "label_match" to false and state what the image actually shows in your reasoning.
+- IMPORTANT: If the image clearly shows a DIFFERENT condition than {diagnosis} (e.g., a keloid labeled as seborrheic keratosis), set "label_match" to false and explain in the reasoning field.
 
 Respond ONLY with a valid JSON object in this exact format:
 
 {{
   "label_match": true or false,
-  "reasoning": "In ~100 words, describe the morphology (plaques, papules, macules, etc.), color, texture, distribution, and body location using dermatological terminology. If label_match is true, explain which visual features support the confirmed diagnosis of {diagnosis}. If label_match is false, explain what the image actually shows and why it does not match {diagnosis}.",
+  "morphology": "Primary lesion type (plaque, papule, macule, nodule, vesicle, pustule, etc.) and arrangement (solitary, grouped, confluent). 1-2 sentences.",
+  "color": "Exact color description adapted to the observed skin tone (e.g., violaceous, hyperpigmented, erythematous, depigmented, tan-brown). Note heterogeneity if present.",
+  "texture": "Surface quality (smooth, rough, verrucous, scaly, crusted, lichenified, weeping, etc.).",
+  "border": "Border characteristics (well-defined, irregular, asymmetric, diffuse, raised, flat).",
+  "location": "Visible body location and distribution pattern (e.g., truncal, flexural, sun-exposed, dermatomal).",
+  "size": "Estimated lesion size or extent if discernible (e.g., <1cm, 2-3cm, diffuse patches).",
+  "reasoning": "1-2 sentences tying the above features to the confirmed diagnosis of {diagnosis}. If label_match is false, explain what the image actually shows and why it does not match {diagnosis}.",
   "confidence": "low | medium | high",
   "fitzpatrick_skin_type": 1-6
 }}
