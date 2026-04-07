@@ -40,3 +40,13 @@ typing-inspection==0.4.2
 urllib3==2.6.3
 webencodings==0.5.1
 websockets==16.0
+
+# GPU evaluation dependencies (install on RunPod)
+# vllm>=0.19.0
+# transformers>=5.5.0
+# accelerate
+# huggingface_hub
+# bitsandbytes
+# scipy
+# sentencepiece
+# pandas

@@ -9,7 +9,12 @@
       "WebFetch(domain:www.nature.com)",
       "Bash(curl -s 'https://dermnetnz.org/image-library')",
       "Bash(curl -s \"https://www.kaggle.com/api/v1/datasets/list?search=skin+rash+dataset&maxSize=&minSize=&filetype=all&tagids=&sort=relevance&page=1\")",
-      "Bash(python3 -m json.tool)"
+      "Bash(python3 -m json.tool)",
+      "Bash(python3 -c ':*)",
+      "Bash(curl -s https://raw.githubusercontent.com/velvinnn/DermaVQA/main/models/GPT-4-vision/predictions/iiyi_test_gpt4v_simple_prompt.json)",
+      "Bash(curl -s https://raw.githubusercontent.com/velvinnn/DermaVQA/main/models/LLaVA_FT/fitzpatrick17k_subset.json)",
+      "WebFetch(domain:www.spheron.network)",
+      "Bash(ssh root@69.30.85.137 -p 22197 -i ~/.ssh/id_ed25519 \"tail -20 /workspace/benchmark_log.txt\")"
     ]
   }
 }
