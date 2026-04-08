@@ -329,7 +329,7 @@ def main():
     parser.add_argument("--model", choices=list(MODELS.keys()), help="Model to evaluate")
     parser.add_argument("--benchmark", choices=list(BENCHMARKS.keys()), help="Benchmark to run")
     parser.add_argument("--all", action="store_true", help="Run all models on all benchmarks")
-    parser.add_argument("--batch-size", type=int, default=BATCH_SIZE, help="Batch size for inference")
+    parser.add_argument("--batch-size", type=int, default=16, help="Batch size for inference")
     args = parser.parse_args()
 
     global BATCH_SIZE
