@@ -31,14 +31,16 @@ def load_model(model_key: str):
     hf_id = model_cfg["hf_id"]
     print(f"Loading {hf_id} with vLLM...")
 
-    processor = AutoProcessor.from_pretrained(hf_id, trust_remote_code=True)
+    import os
+    hf_token = os.environ.get("HF_TOKEN")
+    processor = AutoProcessor.from_pretrained(hf_id, trust_remote_code=True, token=hf_token)
 
     llm = LLM(
         model=hf_id,
         download_dir="/workspace/hf_cache",
         max_model_len=4096,
         trust_remote_code=True,
-        dtype="float16",
+        dtype="bfloat16",
         gpu_memory_utilization=0.9,
     )
     print(f"Loaded {hf_id}")
