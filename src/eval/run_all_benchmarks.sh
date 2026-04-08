@@ -15,7 +15,7 @@ echo "  Zero-Shot Benchmark Evaluation"
 echo "  4 models × 3 benchmarks = 12 runs"
 echo "============================================"
 
-MODELS=("gemma4-e4b" "qwen3.5-4b" "qwen3.5-9b")
+MODELS=("medgemma-4b" "gemma4-e4b" "qwen3.5-4b" "qwen3.5-9b")
 BENCHMARKS=("fitzpatrick17k" "mm_skin_vqa" "confusion_triads")
 
 START_TIME=$(date +%s)

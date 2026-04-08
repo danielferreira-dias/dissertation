@@ -9,11 +9,11 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 # ── Models ──────────────────────────────────────────────────────────────────
 MODELS = {
-    # "medgemma-4b": {
-    #     "hf_id": "google/medgemma-1.5-4b-it",
-    #     "type": "medical",
-    #     "size": "4B",
-    # },
+    "medgemma-4b": {
+        "hf_id": "google/medgemma-1.5-4b-it",
+        "type": "medical",
+        "size": "4B",
+    },
     "gemma4-e4b": {
         "hf_id": "google/gemma-4-E4B-it",
         "type": "general",
