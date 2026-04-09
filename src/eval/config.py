@@ -56,12 +56,17 @@ BENCHMARKS = {
 RESULTS_DIR = PROJECT_ROOT / "final" / "results"
 
 # ── Prompts ────────────────────────────────────────────────────────────────
-# Prompts are concise because vLLM guided_json enforces the output schema.
+# Prompts include the expected JSON format (improves output quality per vLLM docs).
+# vLLM guided_json enforces the schema structurally.
 
-CLASSIFICATION_PROMPT = (
-    "Diagnose this skin condition. Provide your top diagnosis, a ranked list of 6 "
-    "differentials, your confidence level, and a brief reasoning based on visual features."
-)
+CLASSIFICATION_PROMPT = """Diagnose this skin condition. Respond with a JSON object:
+{
+  "diagnosis": "most likely condition",
+  "top_6": ["1st most likely", "2nd most likely", "3rd", "4th", "5th", "6th"],
+  "confidence": "low | medium | high",
+  "reasoning": "brief explanation of visual features"
+}
+Each entry in top_6 must be a different skin condition name."""
 
 TRIAD_CLASSES = [
     "seborrheic_dermatitis",
@@ -72,13 +77,22 @@ TRIAD_CLASSES = [
     "melanoma",
 ]
 
-TRIAD_PROMPT = (
-    "Which of these 6 conditions does this image show: seborrheic dermatitis, psoriasis, "
-    "eczema, seborrheic keratosis, basal cell carcinoma, or melanoma? "
-    "Provide your diagnosis, confidence, and brief reasoning."
-)
+TRIAD_PROMPT = """Which of these 6 conditions does this image most likely show?
+1. seborrheic_dermatitis
+2. psoriasis
+3. eczema
+4. seborrheic_keratosis
+5. basal_cell_carcinoma
+6. melanoma
 
-VQA_PROMPT_SUFFIX = " Answer concisely in one or two sentences."
+Respond with a JSON object:
+{
+  "diagnosis": "one of the 6 conditions above",
+  "confidence": "low | medium | high",
+  "reasoning": "brief explanation of visual features"
+}"""
+
+VQA_PROMPT_SUFFIX = " Answer concisely in one or two sentences. Respond with JSON: {\"answer\": \"your answer\"}"
 
 # ── JSON Schemas for vLLM guided decoding ──────────────────────────────────
 
