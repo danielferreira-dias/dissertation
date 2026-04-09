@@ -24,3 +24,4 @@
 .env
 data/
 final/benchmarks/
+final/train/
