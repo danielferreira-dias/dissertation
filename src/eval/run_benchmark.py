@@ -53,6 +53,7 @@ def load_model(model_key: str):
         trust_remote_code=True,
         dtype="bfloat16",
         gpu_memory_utilization=0.9,
+        guided_decoding_backend="xgrammar:disable-any-whitespace",
     )
     print(f"Loaded {hf_id}")
     return llm, processor
