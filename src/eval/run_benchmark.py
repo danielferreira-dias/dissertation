@@ -84,16 +84,16 @@ def run_batch(
     max_tokens: int = 2048,
 ) -> list[str]:
     """Run a batch of prompts through vLLM and return responses."""
-    from vllm.sampling_params import GuidedDecodingParams
+    from vllm.sampling_params import StructuredOutputsParams
 
-    guided = None
+    structured = None
     if json_schema:
-        guided = GuidedDecodingParams(json=json_schema)
+        structured = StructuredOutputsParams(json=json_schema)
 
     sampling = SamplingParams(
         max_tokens=max_tokens,
         temperature=0,
-        guided_decoding=guided,
+        structured_outputs=structured,
     )
 
     requests = [
