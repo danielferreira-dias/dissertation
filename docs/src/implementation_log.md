@@ -539,80 +539,82 @@ MedGemma 1.5 4B IT completed all three benchmarks zero-shot.
 
 4. **Seb dermatitis at 63%** is encouraging as our personal test condition — reasonable zero-shot performance that fine-tuning should improve further.
 
-### 7.7 Gemma 4 E4B — Complete Results
+### 7.7 Gemma 4 E4B — Complete Results (v2 — Guided JSON)
 
 Gemma 4 E4B is a general-purpose model from the same architecture family as MedGemma, but without medical-specific pre-training. Comparing it directly with MedGemma isolates the effect of medical pre-training.
 
-**Fitzpatrick17k (1,000 images):** 19.0% Top-1 accuracy — **exceeds GPT-5.2 (18.24%) zero-shot.**
+**Fitzpatrick17k (1,000 images):** 5.9% Top-1, 22.1% Top-6.
 
-**MM-Skin VQA (5,452 QA pairs):** Complete. Containment match at 0.0% — model generates verbose responses that paraphrase rather than reproduce the ground truth. BERTScore pending.
+**MM-Skin VQA (5,452 QA pairs):** BERTScore F1 = 88.64%.
 
-**Confusion Triads (820 images, 6 classes):** 46.1% overall accuracy
+**Confusion Triads (820 images, 6 classes):** 45.4% overall accuracy
 
 | Class | MedGemma 4B | Gemma 4 E4B | Analysis |
 |-------|:-----------:|:-----------:|----------|
-| Seb Keratosis | **91%** | 71% | Both strong, medical training helps |
-| Eczema | 53% | **85%** | Gemma better — may over-predict eczema |
-| Seb Dermatitis | **63%** | 56% | Medical training provides edge |
-| BCC | **55%** | 31% | Medical training significantly better |
-| Psoriasis | **62%** | 11% | Gemma nearly fails — lacks psoriasis training |
-| Melanoma | 7% | **28%** | Both poor, but Gemma 4x better |
+| Seb Keratosis | **91%** | 76% | Both strong, medical training helps |
+| Eczema | 49% | **74%** | Gemma better — may over-predict eczema |
+| Seb Dermatitis | 51% | **74%** | Gemma surprisingly better here |
+| BCC | **69%** | 24% | Medical training significantly better |
+| Psoriasis | **55%** | 15% | Gemma nearly fails — lacks psoriasis training |
+| Melanoma | 3% | **24%** | Both poor, but Gemma 8x better |
 
 **Key findings from MedGemma vs Gemma comparison:**
 
-1. **Medical pre-training is not uniformly better.** MedGemma wins overall (54.5% vs 46.1%) but Gemma 4 outperforms on eczema (85% vs 53%) and melanoma (28% vs 7%). The models have complementary strengths — different training data creates different biases.
+1. **Medical pre-training is not uniformly better.** MedGemma wins overall (53.3% vs 45.4%) but Gemma 4 outperforms on eczema (74% vs 49%), seb dermatitis (74% vs 51%), and melanoma (24% vs 3%). The models have complementary strengths — different training data creates different biases.
 
-2. **Gemma 4 E4B beats GPT-5.2 on Fitzpatrick17k (19.0% vs 18.24%).** A general-purpose 4B model exceeding a massive commercial LLM zero-shot is a significant finding. This suggests that recent architectural improvements (Gemma 4's early fusion design) may matter more than raw scale for visual medical tasks.
+2. **Gemma 4 E4B has a critical fairness gap on Fitzpatrick17k.** 0% accuracy on FST V-VI (dark skin) — the model completely fails on darker skin tones. This is the worst fairness profile of any model tested.
 
-3. **Psoriasis at 11% for Gemma 4** reveals a critical blind spot. Without medical training, the model cannot recognize silvery plaques — the most distinctive feature of psoriasis. This is a strong argument for domain-specific fine-tuning.
+3. **Psoriasis at 15% for Gemma 4** reveals a critical blind spot. Without medical training, the model cannot recognize silvery plaques — the most distinctive feature of psoriasis. This is a strong argument for domain-specific fine-tuning.
 
-4. **Both models fail on melanoma** (7% and 28%). The most dangerous condition remains the hardest to detect regardless of pre-training strategy. This underscores that fine-tuning with our structured reasoning data — which explicitly teaches ABCDE criteria and lesion severity assessment — is essential for clinical safety.
+4. **Both models fail on melanoma** (3% and 24%). The most dangerous condition remains the hardest to detect regardless of pre-training strategy. This underscores that fine-tuning with our structured reasoning data — which explicitly teaches ABCDE criteria and lesion severity assessment — is essential for clinical safety.
 
-### 7.8 Qwen 3.5 4B — Complete Results
+### 7.8 Qwen 3.5 4B — Complete Results (v2 — Guided JSON)
 
-Qwen 3.5 4B is a natively multimodal model using early fusion — vision tokens are integrated during pre-training rather than bolted on via adapters. This architectural choice appears to provide a fundamental advantage.
+Qwen 3.5 4B is a natively multimodal model using early fusion — vision tokens are integrated during pre-training rather than bolted on via adapters.
 
-**Fitzpatrick17k (1,000 images):** 27.9% Top-1 — only 1.3% below SkinFlow's fine-tuned SOTA.
+**Fitzpatrick17k (1,000 images):** 12.0% Top-1, 27.7% Top-6.
 
-**Confusion Triads (820 images, 6 classes):** 86.0% overall — the highest of any model tested.
+**MM-Skin VQA (5,452 QA pairs):** BERTScore F1 = 88.39%.
+
+**Confusion Triads (820 images, 6 classes):** 53.0% overall.
 
 | Class | MedGemma 4B | Gemma 4 E4B | Qwen 3.5 4B |
 |-------|:-----------:|:-----------:|:-----------:|
-| Psoriasis | 62% | 11% | **100%** |
-| Seb Dermatitis | 63% | 56% | **100%** |
-| Eczema | 53% | 85% | **99%** |
-| Seb Keratosis | 91% | 71% | **99%** |
-| BCC | 55% | 31% | **90%** |
-| Melanoma | 7% | 28% | **35%** |
-| **Overall** | **54.5%** | **46.1%** | **86.0%** |
+| Seb Keratosis | **91%** | 76% | 90% |
+| BCC | 69% | 24% | 69% |
+| Psoriasis | 55% | 15% | **57%** |
+| Seb Dermatitis | 51% | **74%** | 56% |
+| Eczema | 49% | **74%** | 33% |
+| Melanoma | 3% | 24% | **15%** |
+| **Overall** | **53.3%** | **45.4%** | **53.0%** |
 
 **Key findings:**
 
-1. **Inflammatory triad solved zero-shot (99-100%).** No other model achieved this. Qwen 3.5's early fusion architecture appears to encode visual dermatological features more effectively than adapter-based approaches.
+1. **Most equitable fairness profile on Fitzpatrick17k** — only 5.4% spread between best and worst FST. Slightly better on darker skin (FST V: 14.9%, FST VI: 13.9%) than lighter skin (FST II: 9.5%).
 
-2. **27.9% on Fitzpatrick17k zero-shot** exceeds GPT-5.2 (18.24%) by +9.7% and nearly matches SkinFlow (29.19%) which required architecture changes + RL fine-tuning. This is the strongest evidence that Qwen 3.5 is the optimal base model for fine-tuning.
+2. **Strong seb keratosis (90%) and BCC (69%)** — competitive with MedGemma on lesion recognition despite no medical pre-training.
 
-3. **Melanoma remains the universal weak point at 35%.** Best of all models tested, but still clinically inadequate. This gap is the primary target for our fine-tuning phase.
+3. **Melanoma at 15%** — better than MedGemma (3%) but still critically inadequate. Primary fine-tuning target.
 
 ### 7.9 Published Baselines from Literature
 
 To contextualize our results, the following published comparisons were compiled from recent dermatology VLM studies. These numbers are cited from their respective papers — not re-run by us.
 
-**Fitzpatrick17k Classification (Published + Our Results):**
+**Fitzpatrick17k Classification (Published + Our Results — v2 Guided JSON):**
 
 | Model | Params | Top-1 | Top-6 | Source |
 |-------|--------|-------|-------|--------|
-| **Qwen 3.5 9B (our zero-shot)** | **9B** | **33.0%** | **33.0%*** | **This work** |
 | SkinFlow (fine-tuned) | 7B | 29.19% | 71.16% | Liu et al., arXiv:2601.09136 |
-| **Qwen 3.5 4B (our zero-shot)** | **4B** | **27.9%** | **27.9%*** | **This work** |
-| **MedGemma 4B (our zero-shot)** | **4B** | **27.1%** | **29.7%** | **This work** |
-| **Gemma 4 E4B (our zero-shot)** | **~4B** | **19.0%** | **20.3%** | **This work** |
+| **MedGemma 4B (our zero-shot)** | **4B** | **19.7%** | **31.1%** | **This work** |
 | GPT-5.2 | Commercial | 18.24% | 42.59% | Liu et al., arXiv:2601.09136 |
-| Qwen3-VL-235B | 235B | 17.13% | 42.59% | Liu et al., arXiv:2601.09136 |
+| **Qwen 3.5 9B (our zero-shot)** | **9B** | **17.3%** | **35.0%** | **This work** |
+| Qwen3-VL-235B | 235B | 17.13% | — | Liu et al., arXiv:2601.09136 |
+| **Qwen 3.5 4B (our zero-shot)** | **4B** | **12.0%** | **27.7%** | **This work** |
+| **Gemma 4 E4B (our zero-shot)** | **~4B** | **5.9%** | **22.1%** | **This work** |
 
-*\*Qwen 3.5 models output a single diagnosis rather than a ranked list of 6, so Top-6 equals Top-1. This is a prompt compliance issue — the models did not follow the JSON format requesting top\_6 differentials. After fine-tuning with structured reasoning data, Top-6 should improve significantly as the models learn to produce ranked differential lists.*
+*All results use vLLM guided JSON structured output (StructuredOutputsParams) to enforce consistent Top-6 differential lists, confidence enums, and reasoning fields. This ensures reproducible scoring across all models.*
 
-**Major finding: Qwen 3.5 9B achieves 33.0% Top-1 zero-shot — exceeding SkinFlow's fine-tuned SOTA (29.19%) by +3.8% without any architecture changes, reinforcement learning, or domain-specific training.** This is, to our knowledge, the highest zero-shot Top-1 accuracy reported on Fitzpatrick17k by any model under 10B parameters.
+**Key findings:** MedGemma 4B exceeds GPT-5.2 on Top-1 (19.7% vs 18.24%). Qwen 3.5 9B matches Qwen3-VL-235B (17.3% vs 17.13%) at 26x fewer parameters. Qwen 9B achieves the highest Top-6 accuracy among our models at 35.0%, demonstrating genuine differential diagnosis capability. Gap to SkinFlow (~10% Top-1) is the fine-tuning target.
 
 **Fairness on Dark Skin — FST V-VI (Published):**
 
@@ -641,26 +643,60 @@ DermoGPT narrowed the human-AI gap by +13.49 on reasoning. Gemini 2.5 Flash "hal
 | Claude 3.7 Sonnet | 66.7% (10/15) | 86.7% | Multiple studies |
 | Gemini 2.0 Flash | 53.3% (8/15) | 60.0% | Multiple studies |
 
-Our Qwen 3.5 4B achieves 86% on confusion triads zero-shot — already competitive with ChatGPT-4o/Claude coverage rates despite being a 4B model.
+Our Qwen 3.5 9B achieves 67.1% on confusion triads zero-shot. Fine-tuning should push this closer to ChatGPT-4o/Claude coverage rates.
 
 **Key takeaway for thesis:** Every published comparison shows the same pattern — small fine-tuned models (2-8B) consistently beat general-purpose LLMs on dermatology. Our zero-shot baselines are already competitive; fine-tuning should push them further, directly validating the dissertation's central argument.
 
-### 7.10 Remaining Evaluations (Running)
+### 7.10 Final Results Summary (v2 — Guided JSON, All Complete)
 
-| Model | Fitzpatrick17k | MM-Skin VQA | Confusion Triads | Status |
-|-------|---------------|-------------|-----------------|--------|
-| MedGemma 4B | **27.1%** | Complete | **54.5%** | **Done** |
-| Gemma 4 E4B | **19.0%** | Complete | **46.1%** | **Done** |
-| Qwen 3.5 4B | **27.9%** | Complete | **86.0%** | **Done** |
-| Qwen 3.5 9B | Running | Pending | Pending | In progress |
+| Model | Fitz Top-1 | Fitz Top-6 | Triads | BERTScore F1 | Status |
+|-------|:----------:|:----------:|:------:|:------------:|--------|
+| MedGemma 4B | **19.7%** | 31.1% | 53.3% | **89.36%** | **Done** |
+| Qwen 3.5 9B | 17.3% | **35.0%** | **67.1%** | 88.36% | **Done** |
+| Qwen 3.5 4B | 12.0% | 27.7% | 53.0% | 88.39% | **Done** |
+| Gemma 4 E4B | 5.9% | 22.1% | 45.4% | 88.64% | **Done** |
 
-### 7.11 Post-Benchmark Scoring Plan
+### 7.11 Qwen 3.5 9B — Complete Results (v2 — Guided JSON)
 
-After all 4 models complete, the following additional scoring will be applied:
+Qwen 3.5 9B is the largest model in our evaluation and the best performer on confusion triads.
 
-- **BERTScore** for MM-Skin VQA: Measures semantic similarity between model predictions and ground-truth answers. More nuanced than containment matching — captures paraphrasing and partial correctness. Will use `microsoft/deberta-xlarge-mnli` as the reference model.
-- **Fairness per FST** for Fitzpatrick17k: Accuracy broken down by Fitzpatrick skin type (I-VI) to quantify skin tone bias.
-- **Confusion matrices** for triads: Full 6x6 matrix showing which conditions are confused with which — critical for understanding failure modes.
+**Fitzpatrick17k (1,000 images):** 17.3% Top-1, 35.0% Top-6.
+
+**MM-Skin VQA (5,452 QA pairs):** BERTScore F1 = 88.36%.
+
+**Confusion Triads (820 images, 6 classes):** 67.1% overall — highest of all models.
+
+| Class | MedGemma 4B | Gemma 4 E4B | Qwen 3.5 4B | Qwen 3.5 9B |
+|-------|:-----------:|:-----------:|:-----------:|:-----------:|
+| Seb Keratosis | **91%** | 76% | 90% | 85% |
+| Seb Dermatitis | 51% | 74% | 56% | **79%** |
+| BCC | 69% | 24% | 69% | **76%** |
+| Psoriasis | 55% | 15% | 57% | **65%** |
+| Eczema | 49% | **74%** | 33% | 61% |
+| Melanoma | 3% | 24% | 15% | **43%** |
+| **Overall** | **53.3%** | **45.4%** | **53.0%** | **67.1%** |
+
+**Key findings:**
+
+1. **Best overall triads accuracy (67.1%)** — most balanced across all 6 classes, no single class below 43%.
+2. **Melanoma at 43%** — best zero-shot melanoma detection of all models. Still clinically inadequate but a significant lead over MedGemma (3%).
+3. **Matches Qwen3-VL-235B on Fitzpatrick17k** (17.3% vs 17.13%) at 26x fewer parameters.
+4. **Good fairness profile** — only 4.1% spread between best and worst FST. Slightly better on darker skin (FST IV: 20.0%) than lighter skin (FST II: 15.9%).
+5. **Highest Top-6 accuracy (35.0%)** — demonstrates genuine differential diagnosis capability with proper structured output.
+
+### 7.12 Scoring Methodology (v2)
+
+All v2 benchmarks use vLLM guided JSON structured output (`StructuredOutputsParams`) with:
+- `StructuredOutputsConfig(backend="xgrammar", disable_any_whitespace=True)` at engine level
+- `repetition_penalty=1.1` to prevent degenerate repetition loops
+- `max_tokens=2048` to prevent truncation
+- JSON schemas enforcing `diagnosis`, `top_6` (array of 6 strings with minLength 3), `confidence` (enum), and `reasoning`
+- For triads: `diagnosis` constrained to enum of 6 target classes
+- For VQA: `answer` field in JSON wrapper
+
+This ensures 100% JSON compliance across all models and reproducible scoring via `python3 src/eval/score_results.py`.
+
+BERTScore computed using `roberta-large` on GPU, measuring semantic similarity between VQA predictions and ground-truth answers.
 
 ### 7.7 Additional Data Access (Newly Approved)
 
