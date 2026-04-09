@@ -1,0 +1,471 @@
+{
+  "medgemma-4b": {
+    "fitzpatrick17k": {
+      "total": 1000,
+      "top1_accuracy": 19.7,
+      "top6_accuracy": 31.1,
+      "top1_correct": 197,
+      "top6_correct": 311,
+      "fairness_by_fst": {
+        "FST_1": {
+          "total": 207,
+          "top1_accuracy": 22.705314009661837
+        },
+        "FST_2": {
+          "total": 296,
+          "top1_accuracy": 20.60810810810811
+        },
+        "FST_3": {
+          "total": 197,
+          "top1_accuracy": 12.690355329949238
+        },
+        "FST_4": {
+          "total": 170,
+          "top1_accuracy": 21.176470588235293
+        },
+        "FST_5": {
+          "total": 94,
+          "top1_accuracy": 20.212765957446805
+        },
+        "FST_6": {
+          "total": 36,
+          "top1_accuracy": 25.0
+        }
+      }
+    },
+    "mm_skin_vqa": {
+      "total": 5452,
+      "exact_match": 0.16507703595011006,
+      "containment_match": 0.22010271460014674,
+      "bertscore_precision": 88.85,
+      "bertscore_recall": 89.92,
+      "bertscore_f1": 89.36
+    },
+    "confusion_triads": {
+      "total": 820,
+      "accuracy": 53.29268292682927,
+      "correct": 437,
+      "per_class": {
+        "basal_cell_carcinoma": {
+          "total": 150,
+          "accuracy": 68.66666666666667
+        },
+        "eczema": {
+          "total": 150,
+          "accuracy": 49.333333333333336
+        },
+        "melanoma": {
+          "total": 150,
+          "accuracy": 3.3333333333333335
+        },
+        "psoriasis": {
+          "total": 150,
+          "accuracy": 54.666666666666664
+        },
+        "seborrheic_dermatitis": {
+          "total": 70,
+          "accuracy": 51.42857142857142
+        },
+        "seborrheic_keratosis": {
+          "total": 150,
+          "accuracy": 91.33333333333333
+        }
+      },
+      "confusion_matrix": {
+        "basal_cell_carcinoma": {
+          "basal_cell_carcinoma": 103,
+          "seborrheic_keratosis": 44,
+          "psoriasis": 2,
+          "seborrheic_dermatitis": 1
+        },
+        "eczema": {
+          "eczema": 74,
+          "psoriasis": 36,
+          "seborrheic_keratosis": 19,
+          "seborrheic_dermatitis": 13,
+          "basal_cell_carcinoma": 8
+        },
+        "melanoma": {
+          "seborrheic_keratosis": 118,
+          "basal_cell_carcinoma": 26,
+          "melanoma": 5,
+          "psoriasis": 1
+        },
+        "psoriasis": {
+          "psoriasis": 82,
+          "eczema": 27,
+          "seborrheic_dermatitis": 22,
+          "seborrheic_keratosis": 16,
+          "basal_cell_carcinoma": 2,
+          "melanoma": 1
+        },
+        "seborrheic_dermatitis": {
+          "seborrheic_dermatitis": 36,
+          "seborrheic_keratosis": 16,
+          "basal_cell_carcinoma": 8,
+          "eczema": 6,
+          "psoriasis": 4
+        },
+        "seborrheic_keratosis": {
+          "seborrheic_keratosis": 137,
+          "basal_cell_carcinoma": 6,
+          "psoriasis": 5,
+          "seborrheic_dermatitis": 2
+        }
+      }
+    }
+  },
+  "gemma4-e4b": {
+    "fitzpatrick17k": {
+      "total": 1000,
+      "top1_accuracy": 5.8999999999999995,
+      "top6_accuracy": 22.1,
+      "top1_correct": 59,
+      "top6_correct": 221,
+      "fairness_by_fst": {
+        "FST_1": {
+          "total": 207,
+          "top1_accuracy": 5.314009661835748
+        },
+        "FST_2": {
+          "total": 296,
+          "top1_accuracy": 8.108108108108109
+        },
+        "FST_3": {
+          "total": 197,
+          "top1_accuracy": 6.091370558375635
+        },
+        "FST_4": {
+          "total": 170,
+          "top1_accuracy": 7.0588235294117645
+        },
+        "FST_5": {
+          "total": 94,
+          "top1_accuracy": 0.0
+        },
+        "FST_6": {
+          "total": 36,
+          "top1_accuracy": 0.0
+        }
+      }
+    },
+    "mm_skin_vqa": {
+      "total": 5452,
+      "exact_match": 0.0,
+      "containment_match": 0.018341892883345562,
+      "bertscore_precision": 87.69,
+      "bertscore_recall": 89.65,
+      "bertscore_f1": 88.64
+    },
+    "confusion_triads": {
+      "total": 820,
+      "accuracy": 45.36585365853659,
+      "correct": 372,
+      "per_class": {
+        "basal_cell_carcinoma": {
+          "total": 150,
+          "accuracy": 24.0
+        },
+        "eczema": {
+          "total": 150,
+          "accuracy": 74.0
+        },
+        "melanoma": {
+          "total": 150,
+          "accuracy": 24.0
+        },
+        "psoriasis": {
+          "total": 150,
+          "accuracy": 15.333333333333332
+        },
+        "seborrheic_dermatitis": {
+          "total": 70,
+          "accuracy": 74.28571428571429
+        },
+        "seborrheic_keratosis": {
+          "total": 150,
+          "accuracy": 76.0
+        }
+      },
+      "confusion_matrix": {
+        "basal_cell_carcinoma": {
+          "seborrheic_keratosis": 59,
+          "basal_cell_carcinoma": 36,
+          "eczema": 28,
+          "seborrheic_dermatitis": 16,
+          "melanoma": 11
+        },
+        "eczema": {
+          "eczema": 111,
+          "seborrheic_dermatitis": 27,
+          "psoriasis": 6,
+          "seborrheic_keratosis": 5,
+          "basal_cell_carcinoma": 1
+        },
+        "melanoma": {
+          "seborrheic_keratosis": 78,
+          "melanoma": 36,
+          "basal_cell_carcinoma": 15,
+          "seborrheic_dermatitis": 15,
+          "eczema": 6
+        },
+        "psoriasis": {
+          "eczema": 72,
+          "seborrheic_dermatitis": 46,
+          "psoriasis": 23,
+          "seborrheic_keratosis": 8,
+          "basal_cell_carcinoma": 1
+        },
+        "seborrheic_dermatitis": {
+          "seborrheic_dermatitis": 52,
+          "eczema": 13,
+          "seborrheic_keratosis": 4,
+          "basal_cell_carcinoma": 1
+        },
+        "seborrheic_keratosis": {
+          "seborrheic_keratosis": 114,
+          "seborrheic_dermatitis": 13,
+          "melanoma": 11,
+          "eczema": 8,
+          "basal_cell_carcinoma": 3,
+          "psoriasis": 1
+        }
+      }
+    }
+  },
+  "qwen3.5-4b": {
+    "fitzpatrick17k": {
+      "total": 1000,
+      "top1_accuracy": 12.0,
+      "top6_accuracy": 27.700000000000003,
+      "top1_correct": 120,
+      "top6_correct": 277,
+      "fairness_by_fst": {
+        "FST_1": {
+          "total": 207,
+          "top1_accuracy": 11.594202898550725
+        },
+        "FST_2": {
+          "total": 296,
+          "top1_accuracy": 9.45945945945946
+        },
+        "FST_3": {
+          "total": 197,
+          "top1_accuracy": 13.19796954314721
+        },
+        "FST_4": {
+          "total": 170,
+          "top1_accuracy": 13.529411764705882
+        },
+        "FST_5": {
+          "total": 94,
+          "top1_accuracy": 14.893617021276595
+        },
+        "FST_6": {
+          "total": 36,
+          "top1_accuracy": 13.88888888888889
+        }
+      }
+    },
+    "mm_skin_vqa": {
+      "total": 5452,
+      "exact_match": 0.16507703595011006,
+      "containment_match": 0.20176082171680115,
+      "bertscore_precision": 87.16,
+      "bertscore_recall": 89.71,
+      "bertscore_f1": 88.39
+    },
+    "confusion_triads": {
+      "total": 820,
+      "accuracy": 53.04878048780488,
+      "correct": 435,
+      "per_class": {
+        "basal_cell_carcinoma": {
+          "total": 150,
+          "accuracy": 69.33333333333334
+        },
+        "eczema": {
+          "total": 150,
+          "accuracy": 32.666666666666664
+        },
+        "melanoma": {
+          "total": 150,
+          "accuracy": 15.333333333333332
+        },
+        "psoriasis": {
+          "total": 150,
+          "accuracy": 56.666666666666664
+        },
+        "seborrheic_dermatitis": {
+          "total": 70,
+          "accuracy": 55.714285714285715
+        },
+        "seborrheic_keratosis": {
+          "total": 150,
+          "accuracy": 90.0
+        }
+      },
+      "confusion_matrix": {
+        "basal_cell_carcinoma": {
+          "basal_cell_carcinoma": 104,
+          "seborrheic_keratosis": 42,
+          "psoriasis": 2,
+          "seborrheic_dermatitis": 1,
+          "eczema": 1
+        },
+        "eczema": {
+          "eczema": 49,
+          "seborrheic_keratosis": 42,
+          "psoriasis": 34,
+          "seborrheic_dermatitis": 19,
+          "basal_cell_carcinoma": 6
+        },
+        "melanoma": {
+          "seborrheic_keratosis": 104,
+          "melanoma": 23,
+          "basal_cell_carcinoma": 21,
+          "psoriasis": 2
+        },
+        "psoriasis": {
+          "psoriasis": 85,
+          "seborrheic_keratosis": 27,
+          "seborrheic_dermatitis": 21,
+          "eczema": 16,
+          "basal_cell_carcinoma": 1
+        },
+        "seborrheic_dermatitis": {
+          "seborrheic_dermatitis": 39,
+          "seborrheic_keratosis": 24,
+          "basal_cell_carcinoma": 3,
+          "eczema": 3,
+          "psoriasis": 1
+        },
+        "seborrheic_keratosis": {
+          "seborrheic_keratosis": 135,
+          "psoriasis": 8,
+          "basal_cell_carcinoma": 5,
+          "melanoma": 1,
+          "seborrheic_dermatitis": 1
+        }
+      }
+    }
+  },
+  "qwen3.5-9b": {
+    "fitzpatrick17k": {
+      "total": 1000,
+      "top1_accuracy": 17.299999999999997,
+      "top6_accuracy": 35.0,
+      "top1_correct": 173,
+      "top6_correct": 350,
+      "fairness_by_fst": {
+        "FST_1": {
+          "total": 207,
+          "top1_accuracy": 15.942028985507244
+        },
+        "FST_2": {
+          "total": 296,
+          "top1_accuracy": 15.878378378378377
+        },
+        "FST_3": {
+          "total": 197,
+          "top1_accuracy": 17.766497461928935
+        },
+        "FST_4": {
+          "total": 170,
+          "top1_accuracy": 20.0
+        },
+        "FST_5": {
+          "total": 94,
+          "top1_accuracy": 19.148936170212767
+        },
+        "FST_6": {
+          "total": 36,
+          "top1_accuracy": 16.666666666666664
+        }
+      }
+    },
+    "mm_skin_vqa": {
+      "total": 5452,
+      "exact_match": 0.055025678650036686,
+      "containment_match": 0.055025678650036686,
+      "bertscore_precision": 87.17,
+      "bertscore_recall": 89.65,
+      "bertscore_f1": 88.36
+    },
+    "confusion_triads": {
+      "total": 820,
+      "accuracy": 67.07317073170732,
+      "correct": 550,
+      "per_class": {
+        "basal_cell_carcinoma": {
+          "total": 150,
+          "accuracy": 76.0
+        },
+        "eczema": {
+          "total": 150,
+          "accuracy": 61.33333333333333
+        },
+        "melanoma": {
+          "total": 150,
+          "accuracy": 43.333333333333336
+        },
+        "psoriasis": {
+          "total": 150,
+          "accuracy": 64.66666666666666
+        },
+        "seborrheic_dermatitis": {
+          "total": 70,
+          "accuracy": 78.57142857142857
+        },
+        "seborrheic_keratosis": {
+          "total": 150,
+          "accuracy": 84.66666666666667
+        }
+      },
+      "confusion_matrix": {
+        "basal_cell_carcinoma": {
+          "basal_cell_carcinoma": 114,
+          "seborrheic_keratosis": 22,
+          "melanoma": 6,
+          "seborrheic_dermatitis": 5,
+          "psoriasis": 2,
+          "eczema": 1
+        },
+        "eczema": {
+          "eczema": 92,
+          "psoriasis": 26,
+          "seborrheic_dermatitis": 14,
+          "seborrheic_keratosis": 11,
+          "basal_cell_carcinoma": 7
+        },
+        "melanoma": {
+          "seborrheic_keratosis": 65,
+          "melanoma": 65,
+          "basal_cell_carcinoma": 16,
+          "psoriasis": 4
+        },
+        "psoriasis": {
+          "psoriasis": 97,
+          "eczema": 28,
+          "seborrheic_dermatitis": 14,
+          "seborrheic_keratosis": 10,
+          "basal_cell_carcinoma": 1
+        },
+        "seborrheic_dermatitis": {
+          "seborrheic_dermatitis": 55,
+          "eczema": 7,
+          "seborrheic_keratosis": 5,
+          "psoriasis": 2,
+          "basal_cell_carcinoma": 1
+        },
+        "seborrheic_keratosis": {
+          "seborrheic_keratosis": 127,
+          "psoriasis": 9,
+          "basal_cell_carcinoma": 7,
+          "melanoma": 4,
+          "seborrheic_dermatitis": 3
+        }
+      }
+    }
+  }
+}
