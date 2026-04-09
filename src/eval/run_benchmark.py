@@ -46,6 +46,8 @@ def load_model(model_key: str):
     hf_token = os.environ.get("HF_TOKEN")
     processor = AutoProcessor.from_pretrained(hf_id, trust_remote_code=True, token=hf_token)
 
+    from vllm.config import StructuredOutputsConfig
+
     llm = LLM(
         model=hf_id,
         download_dir="/workspace/hf_cache",
@@ -53,7 +55,10 @@ def load_model(model_key: str):
         trust_remote_code=True,
         dtype="bfloat16",
         gpu_memory_utilization=0.9,
-        guided_decoding_backend="xgrammar:disable-any-whitespace",
+        structured_outputs_config=StructuredOutputsConfig(
+            backend="xgrammar",
+            disable_any_whitespace=True,
+        ),
     )
     print(f"Loaded {hf_id}")
     return llm, processor
