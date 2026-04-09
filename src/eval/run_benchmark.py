@@ -38,7 +38,7 @@ def load_model(model_key: str):
     llm = LLM(
         model=hf_id,
         download_dir="/workspace/hf_cache",
-        max_model_len=4096,
+        max_model_len=8192,
         trust_remote_code=True,
         dtype="bfloat16",
         gpu_memory_utilization=0.9,
