@@ -88,7 +88,7 @@ CLASSIFICATION_SCHEMA = {
         "diagnosis": {"type": "string"},
         "top_6": {
             "type": "array",
-            "items": {"type": "string"},
+            "items": {"type": "string", "minLength": 3},
             "minItems": 6,
             "maxItems": 6,
         },

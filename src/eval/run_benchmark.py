@@ -100,6 +100,7 @@ def run_batch(
     sampling = SamplingParams(
         max_tokens=max_tokens,
         temperature=0,
+        repetition_penalty=1.1,
         structured_outputs=structured,
     )
 
