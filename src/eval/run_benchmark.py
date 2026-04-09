@@ -89,7 +89,7 @@ def run_batch(
 
     structured = None
     if json_schema:
-        structured = StructuredOutputsParams(json=json_schema)
+        structured = StructuredOutputsParams(json=json_schema, disable_any_whitespace=True)
 
     sampling = SamplingParams(
         max_tokens=max_tokens,
