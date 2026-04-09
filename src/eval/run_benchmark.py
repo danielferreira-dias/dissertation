@@ -33,6 +33,7 @@ from config import (
 )
 
 BATCH_SIZE = 16
+SAMPLE_LIMIT = 0  # 0 = no limit
 
 
 def load_model(model_key: str):
@@ -149,6 +150,8 @@ def run_fitzpatrick(llm, processor, model_key: str):
                 done.add(entry.get("image_id"))
 
     remaining = metadata[~metadata["id"].astype(str).isin(done)]
+    if SAMPLE_LIMIT > 0:
+        remaining = remaining.head(SAMPLE_LIMIT)
     print(f"Fitzpatrick17k: {len(done)} done, {len(remaining)} remaining")
 
     # Build all prompts
@@ -225,6 +228,8 @@ def run_mm_skin_vqa(llm, processor, model_key: str):
                 done.add(entry.get("index"))
 
     remaining_idx = [i for i in range(len(vqa_df)) if i not in done]
+    if SAMPLE_LIMIT > 0:
+        remaining_idx = remaining_idx[:SAMPLE_LIMIT]
     print(f"MM-Skin VQA: {len(done)} done, {len(remaining_idx)} remaining")
 
     batch = []
@@ -298,6 +303,8 @@ def run_confusion_triads(llm, processor, model_key: str):
             if f.suffix.lower() in image_exts and str(f) not in done:
                 test_images.append({"path": str(f), "label": cls_dir.name})
 
+    if SAMPLE_LIMIT > 0:
+        test_images = test_images[:SAMPLE_LIMIT]
     print(f"Confusion triads: {len(done)} done, {len(test_images)} remaining")
 
     batch = []
@@ -362,10 +369,12 @@ def main():
     parser.add_argument("--benchmark", choices=list(BENCHMARKS.keys()), help="Benchmark to run")
     parser.add_argument("--all", action="store_true", help="Run all models on all benchmarks")
     parser.add_argument("--batch-size", type=int, default=16, help="Batch size for inference")
+    parser.add_argument("--limit", type=int, default=0, help="Limit number of samples per benchmark (0 = all)")
     args = parser.parse_args()
 
-    global BATCH_SIZE
+    global BATCH_SIZE, SAMPLE_LIMIT
     BATCH_SIZE = args.batch_size
+    SAMPLE_LIMIT = args.limit
 
     if args.all:
         pairs = [(m, b) for m in MODELS for b in BENCHMARKS]
