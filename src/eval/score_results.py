@@ -169,12 +169,36 @@ def score_vqa(results_file: Path) -> dict:
         if normalize_diagnosis(e["ground_truth"]) in normalize_diagnosis(e.get("prediction", ""))
     )
 
-    return {
+    # BERTScore (semantic similarity)
+    bert_precision = None
+    bert_recall = None
+    bert_f1 = None
+    try:
+        from bert_score import score as bert_score_fn
+
+        preds = [e.get("prediction", "") for e in entries]
+        refs = [e["ground_truth"] for e in entries]
+        P, R, F1 = bert_score_fn(preds, refs, lang="en", verbose=False, batch_size=64)
+        bert_precision = P.mean().item() * 100
+        bert_recall = R.mean().item() * 100
+        bert_f1 = F1.mean().item() * 100
+    except ImportError:
+        pass
+    except Exception as e:
+        print(f"BERTScore error: {e}")
+
+    result = {
         "total": total,
         "exact_match": exact / total * 100 if total else 0,
         "containment_match": contain / total * 100 if total else 0,
-        "note": "VQA scoring is approximate. Consider LLM-based evaluation for production.",
     }
+
+    if bert_f1 is not None:
+        result["bertscore_precision"] = round(bert_precision, 2)
+        result["bertscore_recall"] = round(bert_recall, 2)
+        result["bertscore_f1"] = round(bert_f1, 2)
+
+    return result
 
 
 SCORERS = {
