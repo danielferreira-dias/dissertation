@@ -81,7 +81,7 @@ def run_batch(
     llm,
     prompts_and_images: list[tuple[str, Image.Image]],
     json_schema: dict | None = None,
-    max_tokens: int = 1024,
+    max_tokens: int = 2048,
 ) -> list[str]:
     """Run a batch of prompts through vLLM and return responses."""
     from vllm.sampling_params import GuidedDecodingParams
