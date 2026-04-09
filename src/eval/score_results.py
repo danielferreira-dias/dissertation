@@ -116,8 +116,9 @@ def score_confusion_triads(results_file: Path) -> dict:
         class_scores[gt]["total"] += 1
 
         if parsed:
-            pred_raw = normalize_diagnosis(parsed.get("diagnosis", ""))
-            pred = label_map.get(pred_raw, pred_raw)
+            # Guided JSON uses enum values directly (e.g. "seborrheic_dermatitis")
+            pred_raw = parsed.get("diagnosis", "")
+            pred = label_map.get(normalize_diagnosis(pred_raw), pred_raw)
 
             if pred == gt or gt in pred or pred in gt:
                 correct += 1

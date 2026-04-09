@@ -1,8 +1,8 @@
 #!/bin/bash
-# Run all zero-shot benchmarks sequentially
+# Run all zero-shot benchmarks sequentially with guided JSON output
 # Usage: bash src/eval/run_all_benchmarks.sh
 #
-# Estimated time: ~3-4 hours on A40
+# Estimated time: ~3-4 hours on L40S
 # Estimated cost: ~$1.40
 
 set -e
@@ -11,12 +11,20 @@ cd /workspace/dissertation
 export HF_HOME=/workspace/hf_cache
 
 echo "============================================"
-echo "  Zero-Shot Benchmark Evaluation"
+echo "  Zero-Shot Benchmark Evaluation (v2)"
+echo "  Guided JSON structured output"
 echo "  4 models × 3 benchmarks = 12 runs"
 echo "============================================"
 
 MODELS=("medgemma-4b" "gemma4-e4b" "qwen3.5-4b" "qwen3.5-9b")
 BENCHMARKS=("fitzpatrick17k" "mm_skin_vqa" "confusion_triads")
+
+# Clear old results (format changed — guided JSON vs free text)
+echo ">>> Clearing old results..."
+for model in "${MODELS[@]}"; do
+    rm -rf "final/results/${model}"
+done
+echo ">>> Old results cleared."
 
 START_TIME=$(date +%s)
 

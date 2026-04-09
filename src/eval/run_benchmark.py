@@ -20,7 +20,17 @@ from PIL import Image
 from transformers import AutoProcessor
 from vllm import LLM, SamplingParams
 
-from config import BENCHMARKS, CLASSIFICATION_PROMPT, MODELS, RESULTS_DIR, TRIAD_PROMPT
+from config import (
+    BENCHMARKS,
+    CLASSIFICATION_PROMPT,
+    CLASSIFICATION_SCHEMA,
+    MODELS,
+    RESULTS_DIR,
+    TRIAD_PROMPT,
+    TRIAD_SCHEMA,
+    VQA_PROMPT_SUFFIX,
+    VQA_SCHEMA,
+)
 
 BATCH_SIZE = 16
 
@@ -67,9 +77,24 @@ def build_prompt(processor, image_path: str, prompt: str) -> tuple[str, Image.Im
     return chat_prompt, image
 
 
-def run_batch(llm, prompts_and_images: list[tuple[str, Image.Image]]) -> list[str]:
+def run_batch(
+    llm,
+    prompts_and_images: list[tuple[str, Image.Image]],
+    json_schema: dict | None = None,
+    max_tokens: int = 1024,
+) -> list[str]:
     """Run a batch of prompts through vLLM and return responses."""
-    sampling = SamplingParams(max_tokens=512, temperature=0)
+    from vllm.sampling_params import GuidedDecodingParams
+
+    guided = None
+    if json_schema:
+        guided = GuidedDecodingParams(json=json_schema)
+
+    sampling = SamplingParams(
+        max_tokens=max_tokens,
+        temperature=0,
+        guided_decoding=guided,
+    )
 
     requests = [
         {
@@ -148,7 +173,7 @@ def run_fitzpatrick(llm, processor, model_key: str):
                 continue
 
             if len(batch) >= BATCH_SIZE:
-                responses = run_batch(llm, batch)
+                responses = run_batch(llm, batch, json_schema=CLASSIFICATION_SCHEMA)
                 for resp, meta_row in zip(responses, batch_meta):
                     parsed = parse_json_response(resp)
                     entry = {
@@ -167,7 +192,7 @@ def run_fitzpatrick(llm, processor, model_key: str):
 
         # Process remaining
         if batch:
-            responses = run_batch(llm, batch)
+            responses = run_batch(llm, batch, json_schema=CLASSIFICATION_SCHEMA)
             for resp, meta_row in zip(responses, batch_meta):
                 parsed = parse_json_response(resp)
                 entry = {
@@ -216,7 +241,8 @@ def run_mm_skin_vqa(llm, processor, model_key: str):
                 continue
 
             try:
-                prompt, image = build_prompt(processor, str(img_path), row["question"])
+                vqa_prompt = row["question"] + VQA_PROMPT_SUFFIX
+                prompt, image = build_prompt(processor, str(img_path), vqa_prompt)
                 batch.append((prompt, image))
                 batch_meta.append({"index": idx, "image": img_filename,
                                    "question": row["question"], "ground_truth": row["answer"]})
@@ -224,9 +250,11 @@ def run_mm_skin_vqa(llm, processor, model_key: str):
                 continue
 
             if len(batch) >= BATCH_SIZE:
-                responses = run_batch(llm, batch)
+                responses = run_batch(llm, batch, json_schema=VQA_SCHEMA)
                 for resp, meta in zip(responses, batch_meta):
-                    entry = {**meta, "prediction": resp}
+                    parsed = parse_json_response(resp)
+                    prediction = parsed.get("answer", resp) if parsed else resp
+                    entry = {**meta, "raw_response": resp, "prediction": prediction}
                     out.write(json.dumps(entry) + "\n")
                 out.flush()
                 processed += len(batch)
@@ -235,9 +263,11 @@ def run_mm_skin_vqa(llm, processor, model_key: str):
                 batch_meta = []
 
         if batch:
-            responses = run_batch(llm, batch)
+            responses = run_batch(llm, batch, json_schema=VQA_SCHEMA)
             for resp, meta in zip(responses, batch_meta):
-                entry = {**meta, "prediction": resp}
+                parsed = parse_json_response(resp)
+                prediction = parsed.get("answer", resp) if parsed else resp
+                entry = {**meta, "raw_response": resp, "prediction": prediction}
                 out.write(json.dumps(entry) + "\n")
             out.flush()
             processed += len(batch)
@@ -284,7 +314,7 @@ def run_confusion_triads(llm, processor, model_key: str):
                 continue
 
             if len(batch) >= BATCH_SIZE:
-                responses = run_batch(llm, batch)
+                responses = run_batch(llm, batch, json_schema=TRIAD_SCHEMA)
                 for resp, meta in zip(responses, batch_meta):
                     parsed = parse_json_response(resp)
                     entry = {
@@ -301,7 +331,7 @@ def run_confusion_triads(llm, processor, model_key: str):
                 batch_meta = []
 
         if batch:
-            responses = run_batch(llm, batch)
+            responses = run_batch(llm, batch, json_schema=TRIAD_SCHEMA)
             for resp, meta in zip(responses, batch_meta):
                 parsed = parse_json_response(resp)
                 entry = {

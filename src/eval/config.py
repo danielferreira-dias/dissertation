@@ -55,30 +55,63 @@ BENCHMARKS = {
 # ── Evaluation Settings ─────────────────────────────────────────────────────
 RESULTS_DIR = PROJECT_ROOT / "final" / "results"
 
-# Classification prompt for Fitzpatrick17k and confusion triads
-CLASSIFICATION_PROMPT = """Look at this dermatological image and provide your diagnosis.
+# ── Prompts ────────────────────────────────────────────────────────────────
+# Prompts are concise because vLLM guided_json enforces the output schema.
 
-Respond with ONLY a JSON object:
-{
-  "diagnosis": "the most likely skin condition",
-  "top_6": ["most likely", "2nd most likely", "3rd", "4th", "5th", "6th"],
-  "confidence": "low | medium | high",
-  "reasoning": "brief explanation of visual features supporting your diagnosis"
-}"""
+CLASSIFICATION_PROMPT = (
+    "Diagnose this skin condition. Provide your top diagnosis, a ranked list of 6 "
+    "differentials, your confidence level, and a brief reasoning based on visual features."
+)
 
-# For confusion triad evaluation, constrain to 6 classes
-TRIAD_PROMPT = """Look at this dermatological image. Based on the visual features, which of the following conditions does this image most likely show?
+TRIAD_CLASSES = [
+    "seborrheic_dermatitis",
+    "psoriasis",
+    "eczema",
+    "seborrheic_keratosis",
+    "basal_cell_carcinoma",
+    "melanoma",
+]
 
-1. Seborrheic Dermatitis
-2. Psoriasis
-3. Eczema
-4. Seborrheic Keratosis
-5. Basal Cell Carcinoma
-6. Melanoma
+TRIAD_PROMPT = (
+    "Which of these 6 conditions does this image show: seborrheic dermatitis, psoriasis, "
+    "eczema, seborrheic keratosis, basal cell carcinoma, or melanoma? "
+    "Provide your diagnosis, confidence, and brief reasoning."
+)
 
-Respond with ONLY a JSON object:
-{
-  "diagnosis": "one of the 6 conditions above",
-  "confidence": "low | medium | high",
-  "reasoning": "brief explanation of visual features"
-}"""
+VQA_PROMPT_SUFFIX = " Answer concisely in one or two sentences."
+
+# ── JSON Schemas for vLLM guided decoding ──────────────────────────────────
+
+CLASSIFICATION_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "diagnosis": {"type": "string"},
+        "top_6": {
+            "type": "array",
+            "items": {"type": "string"},
+            "minItems": 6,
+            "maxItems": 6,
+        },
+        "confidence": {"type": "string", "enum": ["low", "medium", "high"]},
+        "reasoning": {"type": "string"},
+    },
+    "required": ["diagnosis", "top_6", "confidence", "reasoning"],
+}
+
+TRIAD_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "diagnosis": {"type": "string", "enum": TRIAD_CLASSES},
+        "confidence": {"type": "string", "enum": ["low", "medium", "high"]},
+        "reasoning": {"type": "string"},
+    },
+    "required": ["diagnosis", "confidence", "reasoning"],
+}
+
+VQA_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "answer": {"type": "string"},
+    },
+    "required": ["answer"],
+}
