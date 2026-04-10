@@ -153,6 +153,11 @@ def format_observation(obs: dict) -> str:
     return "\n".join(parts)
 
 
+RESPONSE_FORMAT = {"type": "json_object"}
+
+MAX_RETRIES = 3
+
+
 def generate_reasoning(
     image_path: str,
     label: str,
@@ -162,6 +167,8 @@ def generate_reasoning(
 ) -> tuple[dict | None, str | None]:
     """Send image + observation + label to any LLM via litellm.
 
+    Uses structured output (response_format) to enforce JSON schema.
+    Retries up to MAX_RETRIES times on transient failures.
     Returns (result, blocked_reason).
     """
     obs_text = format_observation(observation)
@@ -173,40 +180,53 @@ def generate_reasoning(
 
     image_b64, mime = encode_image(image_path)
 
-    try:
-        response = litellm.completion(
-            model=model,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{image_b64}", "detail": "high"}},
-                        {"type": "text", "text": prompt},
-                    ],
-                }
-            ],
-            max_tokens=1024,
-            temperature=0.2,
-        )
-    except Exception as e:
-        error_msg = str(e).lower()
-        if any(kw in error_msg for kw in ["content_filter", "content management", "safety", "blocked"]):
-            return None, f"content_filter | {str(e)[:200]}"
-        raise
+    for attempt in range(MAX_RETRIES):
+        try:
+            response = litellm.completion(
+                model=model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{image_b64}", "detail": "high"}},
+                            {"type": "text", "text": prompt},
+                        ],
+                    }
+                ],
+                max_tokens=1024,
+                temperature=0.2,
+                response_format=RESPONSE_FORMAT,
+            )
+        except Exception as e:
+            error_msg = str(e).lower()
+            if any(kw in error_msg for kw in ["content_filter", "content management", "safety", "blocked"]):
+                return None, f"content_filter | {str(e)[:200]}"
+            if any(kw in error_msg for kw in ["rate limit", "429", "503", "quota", "overloaded"]) and attempt < MAX_RETRIES - 1:
+                time.sleep(2 ** (attempt + 1))
+                continue
+            raise
 
-    choice = response.choices[0]
+        choice = response.choices[0]
 
-    if choice.finish_reason == "content_filter":
-        return None, "content_filter | finish_reason=content_filter"
+        if choice.finish_reason == "content_filter":
+            return None, "content_filter | finish_reason=content_filter"
 
-    text = choice.message.content
-    if not text:
-        return None, "empty_response"
+        text = choice.message.content
+        if not text:
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(1)
+                continue
+            return None, "empty_response"
 
-    parsed = parse_response(text)
-    if parsed is None:
-        return None, "json_parse_error"
-    return parsed, None
+        parsed = parse_response(text)
+        if parsed is None:
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(1)
+                continue
+            return None, "json_parse_error"
+        return parsed, None
+
+    return None, "max_retries_exceeded"
 
 
 def _detect_source(image_path: str) -> str:
@@ -235,10 +255,12 @@ Model examples:
     parser.add_argument("--output", type=Path, default=Path("data/reasoning/reasoning.jsonl"))
     parser.add_argument("--model", default="anthropic/claude-3-5-haiku-latest", help="litellm model string")
     parser.add_argument("--limit", type=int, default=None, help="Max entries to process")
-    parser.add_argument("--delay", type=float, default=0.2, help="Seconds between API calls")
+    parser.add_argument("--delay", type=float, default=0.1, help="Seconds between API calls")
+    parser.add_argument("--workers", type=int, default=8, help="Parallel workers (default: 8)")
+    parser.add_argument("--retry-flagged", action="store_true", help="Retry previously flagged images")
     args = parser.parse_args()
 
-    print(f"Model: {args.model}")
+    print(f"Model: {args.model} | Workers: {args.workers}")
 
     category_mapping = load_category_mapping()
 
@@ -250,31 +272,51 @@ Model examples:
         print(f"Limited to {len(observations)}")
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
+    flagged_path = args.output.parent / "flagged_reasoner.jsonl"
+
     done = load_progress(args.output)
-    remaining = [obs for obs in observations if obs["image_path"] not in done]
+
+    if args.retry_flagged and flagged_path.exists():
+        flagged_paths = set()
+        with open(flagged_path) as f:
+            for line in f:
+                try:
+                    entry = json.loads(line)
+                    flagged_paths.add(entry["image_path"])
+                except (json.JSONDecodeError, KeyError):
+                    continue
+        print(f"Retrying {len(flagged_paths)} previously flagged images")
+        flagged_path.write_text("")
+        remaining = [obs for obs in observations if obs["image_path"] not in done or obs["image_path"] in flagged_paths]
+    else:
+        remaining = [obs for obs in observations if obs["image_path"] not in done]
+
     print(f"Already processed: {len(done)}, remaining: {len(remaining)}")
 
     if not remaining:
         print("Nothing to do.")
         return
 
-    flagged_path = args.output.parent / "flagged_reasoner.jsonl"
     failed = 0
-    flagged = 0
-    with open(args.output, "a") as out, open(flagged_path, "a") as flagged_out:
-        for obs in tqdm(remaining, desc="Generating reasoning"):
-            image_path = obs["image_path"]
-            label = obs["label"]
-            category = category_mapping.get(label, "benign")
-            observation = obs.get("observation", {})
+    flagged_count = 0
+    processed = 0
+    lock = __import__("threading").Lock()
 
-            try:
-                result, blocked_reason = generate_reasoning(
-                    image_path, label, category, observation, args.model
-                )
+    def process_observation(obs: dict) -> None:
+        nonlocal failed, flagged_count, processed
+        image_path = obs["image_path"]
+        label = obs["label"]
+        category = category_mapping.get(label, "benign")
+        observation = obs.get("observation", {})
 
+        try:
+            result, blocked_reason = generate_reasoning(
+                image_path, label, category, observation, args.model
+            )
+
+            with lock:
                 if blocked_reason:
-                    flagged += 1
+                    flagged_count += 1
                     flagged_entry = {
                         "image_path": image_path,
                         "label": label,
@@ -283,29 +325,39 @@ Model examples:
                     }
                     flagged_out.write(json.dumps(flagged_entry) + "\n")
                     flagged_out.flush()
-                    print(f"\nFlagged: {image_path} — {blocked_reason}")
-                    continue
+                else:
+                    entry = {
+                        "image_path": image_path,
+                        "ground_truth": label,
+                        "category": category,
+                        "dataset_source": _detect_source(image_path),
+                        "observation": observation,
+                        "reasoning": result,
+                    }
+                    out.write(json.dumps(entry) + "\n")
+                    out.flush()
+                    processed += 1
 
-                entry = {
-                    "image_path": image_path,
-                    "ground_truth": label,
-                    "category": category,
-                    "dataset_source": _detect_source(image_path),
-                    "observation": observation,
-                    "reasoning": result,
-                }
-                out.write(json.dumps(entry) + "\n")
-                out.flush()
-
-            except Exception as e:
-                print(f"\nError: {image_path}: {e}")
+        except Exception as e:
+            with lock:
                 failed += 1
+                tqdm.write(f"Error: {image_path}: {e}")
 
-            time.sleep(args.delay)
+        time.sleep(args.delay)
 
-    print(f"\nDone. Processed: {len(remaining) - failed - flagged}, Flagged: {flagged}, Failed: {failed}")
+    from concurrent.futures import ThreadPoolExecutor
+
+    with open(args.output, "a") as out, open(flagged_path, "a") as flagged_out:
+        with ThreadPoolExecutor(max_workers=args.workers) as pool:
+            list(tqdm(
+                pool.map(process_observation, remaining),
+                total=len(remaining),
+                desc="Generating reasoning",
+            ))
+
+    print(f"\nDone. Processed: {processed}, Flagged: {flagged_count}, Failed: {failed}")
     print(f"Output: {args.output}")
-    if flagged > 0:
+    if flagged_count > 0:
         print(f"Flagged images: {flagged_path}")
 
 

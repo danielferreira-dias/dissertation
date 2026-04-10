@@ -124,47 +124,67 @@ def encode_image(image_path: str) -> tuple[str, str]:
     return b64, mime
 
 
+RESPONSE_FORMAT = {"type": "json_object"}
+
+MAX_RETRIES = 3
+
+
 def observe_image(image_path: str, model: str) -> tuple[dict | None, str | None]:
     """Send image to any LLM via litellm and get pure visual description.
 
+    Uses structured output (response_format) to enforce JSON schema.
+    Retries up to MAX_RETRIES times on transient failures.
     Returns (result, blocked_reason).
     """
     image_b64, mime = encode_image(image_path)
 
-    try:
-        response = litellm.completion(
-            model=model,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{image_b64}", "detail": "high"}},
-                        {"type": "text", "text": OBSERVER_PROMPT},
-                    ],
-                }
-            ],
-            max_tokens=1024,
-            temperature=0.2,
-        )
-    except Exception as e:
-        error_msg = str(e).lower()
-        if any(kw in error_msg for kw in ["content_filter", "content management", "safety", "blocked", "recitation"]):
-            return None, f"content_filter | {str(e)[:200]}"
-        raise
+    for attempt in range(MAX_RETRIES):
+        try:
+            response = litellm.completion(
+                model=model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{image_b64}", "detail": "high"}},
+                            {"type": "text", "text": OBSERVER_PROMPT},
+                        ],
+                    }
+                ],
+                max_tokens=1024,
+                temperature=0.2,
+                response_format=RESPONSE_FORMAT,
+            )
+        except Exception as e:
+            error_msg = str(e).lower()
+            if any(kw in error_msg for kw in ["content_filter", "content management", "safety", "blocked", "recitation"]):
+                return None, f"content_filter | {str(e)[:200]}"
+            if any(kw in error_msg for kw in ["rate limit", "429", "503", "quota", "overloaded"]) and attempt < MAX_RETRIES - 1:
+                time.sleep(2 ** (attempt + 1))
+                continue
+            raise
 
-    choice = response.choices[0]
+        choice = response.choices[0]
 
-    if choice.finish_reason in ("content_filter", "safety"):
-        return None, f"content_filter | finish_reason={choice.finish_reason}"
+        if choice.finish_reason in ("content_filter", "safety"):
+            return None, f"content_filter | finish_reason={choice.finish_reason}"
 
-    text = choice.message.content
-    if not text:
-        return None, "empty_response"
+        text = choice.message.content
+        if not text:
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(1)
+                continue
+            return None, "empty_response"
 
-    parsed = parse_response(text)
-    if parsed is None:
-        return None, "json_parse_error"
-    return parsed, None
+        parsed = parse_response(text)
+        if parsed is None:
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(1)
+                continue
+            return None, "json_parse_error"
+        return parsed, None
+
+    return None, "max_retries_exceeded"
 
 
 def main():
@@ -188,6 +208,7 @@ Model examples:
     parser.add_argument("--limit", type=int, default=None, help="Max images per class")
     parser.add_argument("--delay", type=float, default=0.1, help="Seconds between API calls")
     parser.add_argument("--workers", type=int, default=8, help="Parallel workers (default: 8)")
+    parser.add_argument("--retry-flagged", action="store_true", help="Retry previously flagged images")
     parser.add_argument("--classes", nargs="+", default=None, help="Specific classes (default: all)")
     args = parser.parse_args()
 
@@ -208,15 +229,35 @@ Model examples:
         print(f"Limited to {len(images)} images ({args.limit} per class)")
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
+    flagged_path = args.output.parent / "flagged.jsonl"
+
     done = load_progress(args.output)
-    remaining = [img for img in images if img["path"] not in done]
+
+    # If retrying flagged, load them and clear the flagged file
+    if args.retry_flagged and flagged_path.exists():
+        flagged_images = []
+        with open(flagged_path) as f:
+            for line in f:
+                try:
+                    entry = json.loads(line)
+                    flagged_images.append({"path": entry["image_path"], "label": entry["label"]})
+                except (json.JSONDecodeError, KeyError):
+                    continue
+        # Remove flagged entries from done so they get reprocessed
+        flagged_paths = {img["path"] for img in flagged_images}
+        print(f"Retrying {len(flagged_paths)} previously flagged images")
+        # Clear flagged file
+        flagged_path.write_text("")
+        remaining = [img for img in images if img["path"] not in done or img["path"] in flagged_paths]
+    else:
+        remaining = [img for img in images if img["path"] not in done]
+
     print(f"Already processed: {len(done)}, remaining: {len(remaining)}")
 
     if not remaining:
         print("Nothing to do.")
         return
 
-    flagged_path = args.output.parent / "flagged.jsonl"
     failed = 0
     flagged_count = 0
     processed = 0
