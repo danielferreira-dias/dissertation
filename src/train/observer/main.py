@@ -1,47 +1,42 @@
 """
 Stage 1: Observer — Generate visual descriptions for dermatology images.
 
-Describes images WITHOUT any diagnosis knowledge using any vision-capable LLM.
+Describes images WITHOUT any diagnosis knowledge using Vertex AI Gemini.
 
-Quick start (tested config — Gemini 3 Flash on Vertex AI, 8 parallel workers):
-  VERTEXAI_LOCATION=global python3 src/train/observer/main.py --model vertex_ai/gemini-3-flash-preview --data-dir final/train --workers 8
+Quick start (Gemini 3 Flash on Vertex AI, 8 parallel workers):
+  python3 src/train/observer/main.py --model gemini-3-flash-preview --data-dir final/train --workers 8
 
 Test with 5 images:
-  VERTEXAI_LOCATION=global python3 src/train/observer/main.py --model vertex_ai/gemini-3-flash-preview --data-dir final/train --limit 1 --classes melanoma psoriasis eczema basal_cell_carcinoma seborrheic_keratosis
+  python3 src/train/observer/main.py --model gemini-3-flash-preview --data-dir final/train --limit 1 --classes melanoma psoriasis eczema basal_cell_carcinoma seborrheic_keratosis
+
+Retry previously flagged images:
+  python3 src/train/observer/main.py --retry-flagged
 
 Script is resumable — re-run the same command to continue from where it left off.
 
-Other providers:
-  python3 src/train/observer/main.py --model anthropic/claude-3-5-haiku-latest
-  python3 src/train/observer/main.py --model openai/gpt-4o-mini
-  python3 src/train/observer/main.py --model azure/gpt-4o-mini
-  python3 src/train/observer/main.py --model bedrock/amazon.nova-lite-v1:0
+Setup:
+  gcloud auth application-default login
+  gcloud config set project YOUR_PROJECT_ID
 
-Supported providers (set env vars):
-  Vertex AI: gcloud auth application-default login (+ VERTEXAI_LOCATION=global)
-  Azure:     AZURE_API_KEY, AZURE_API_BASE, AZURE_API_VERSION
-  AWS:       AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION_NAME
-  Anthropic: ANTHROPIC_API_KEY
-  Google:    GEMINI_API_KEY
-  OpenAI:    OPENAI_API_KEY
+Available models: gemini-3-flash-preview, gemini-2.5-flash, gemini-2.5-flash-lite, gemini-2.5-pro
 
 Output: data/reasoning/observations.jsonl
 Flagged: data/reasoning/flagged.jsonl
 """
 
 import argparse
-import base64
+import io
 import json
 import time
 from pathlib import Path
 
-import litellm
 from dotenv import load_dotenv
+from google import genai
+from google.genai import types
+from PIL import Image
 from tqdm import tqdm
 
 load_dotenv()
-
-litellm.suppress_debug_info = True
 
 OBSERVER_PROMPT = """You are a clinical dermatology observer. Describe ONLY what you see in this image.
 
@@ -67,7 +62,15 @@ Respond with ONLY a JSON object:
 
 No markdown, no code fences, no diagnosis. Only the JSON object."""
 
+SAFETY_SETTINGS = [
+    types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="BLOCK_NONE"),
+    types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="BLOCK_NONE"),
+    types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_NONE"),
+    types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_NONE"),
+]
+
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
+MAX_RETRIES = 3
 
 
 def collect_images(data_dir: Path, classes: list[str] | None) -> list[dict]:
@@ -115,68 +118,62 @@ def parse_response(text: str) -> dict | None:
         return None
 
 
-def encode_image(image_path: str) -> tuple[str, str]:
-    """Encode image to base64 and detect mime type."""
-    ext = Path(image_path).suffix.lower().lstrip(".")
-    mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp"}.get(ext, "image/jpeg")
-    with open(image_path, "rb") as f:
-        b64 = base64.b64encode(f.read()).decode("utf-8")
-    return b64, mime
+def observe_image(client: genai.Client, image_path: str, model: str) -> tuple[dict | None, str | None]:
+    """Send image to Vertex AI Gemini and get pure visual description.
 
-
-RESPONSE_FORMAT = {"type": "json_object"}
-
-MAX_RETRIES = 3
-
-
-def observe_image(image_path: str, model: str) -> tuple[dict | None, str | None]:
-    """Send image to any LLM via litellm and get pure visual description.
-
-    Uses structured output (response_format) to enforce JSON schema.
-    Retries up to MAX_RETRIES times on transient failures.
+    Retries up to MAX_RETRIES on transient failures.
     Returns (result, blocked_reason).
     """
-    image_b64, mime = encode_image(image_path)
+    img = Image.open(image_path).convert("RGB")
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG")
+    image_bytes = buf.getvalue()
 
     for attempt in range(MAX_RETRIES):
         try:
-            response = litellm.completion(
+            response = client.models.generate_content(
                 model=model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{image_b64}", "detail": "high"}},
-                            {"type": "text", "text": OBSERVER_PROMPT},
+                contents=[
+                    types.Content(
+                        role="user",
+                        parts=[
+                            types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+                            types.Part.from_text(text=OBSERVER_PROMPT),
                         ],
-                    }
+                    )
                 ],
-                max_tokens=1024,
-                temperature=0.2,
-                response_format=RESPONSE_FORMAT,
+                config=types.GenerateContentConfig(
+                    safety_settings=SAFETY_SETTINGS,
+                    response_mime_type="application/json",
+                    max_output_tokens=1024,
+                    temperature=0.2,
+                ),
             )
         except Exception as e:
             error_msg = str(e).lower()
-            if any(kw in error_msg for kw in ["content_filter", "content management", "safety", "blocked", "recitation"]):
+            if any(kw in error_msg for kw in ["safety", "blocked", "recitation"]):
                 return None, f"content_filter | {str(e)[:200]}"
-            if any(kw in error_msg for kw in ["rate limit", "429", "503", "quota", "overloaded"]) and attempt < MAX_RETRIES - 1:
+            if any(kw in error_msg for kw in ["429", "503", "quota", "overloaded", "unavailable"]) and attempt < MAX_RETRIES - 1:
                 time.sleep(2 ** (attempt + 1))
                 continue
             raise
 
-        choice = response.choices[0]
+        # Check if blocked by safety filters
+        if response.candidates and response.candidates[0].finish_reason:
+            reason = str(response.candidates[0].finish_reason)
+            if reason in ("SAFETY", "RECITATION", "BLOCKED"):
+                ratings = []
+                if response.candidates[0].safety_ratings:
+                    ratings = [f"{r.category}:{r.probability}" for r in response.candidates[0].safety_ratings]
+                return None, f"{reason} | {', '.join(ratings)}"
 
-        if choice.finish_reason in ("content_filter", "safety"):
-            return None, f"content_filter | finish_reason={choice.finish_reason}"
-
-        text = choice.message.content
-        if not text:
+        if not response.text:
             if attempt < MAX_RETRIES - 1:
                 time.sleep(1)
                 continue
             return None, "empty_response"
 
-        parsed = parse_response(text)
+        parsed = parse_response(response.text)
         if parsed is None:
             if attempt < MAX_RETRIES - 1:
                 time.sleep(1)
@@ -189,22 +186,21 @@ def observe_image(image_path: str, model: str) -> tuple[dict | None, str | None]
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Stage 1: Observer — visual descriptions via any LLM",
+        description="Stage 1: Observer — visual descriptions via Vertex AI Gemini",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Model examples:
-  --model gemini/gemini-2.5-flash       Google Gemini
-  --model gemini/gemini-3-flash         Google Gemini 3
-  --model anthropic/claude-3-5-haiku-latest  Anthropic direct
-  --model bedrock/anthropic.claude-3-5-haiku AWS Bedrock
-  --model azure/gpt-4o-mini             Azure OpenAI
-  --model openai/gpt-4o-mini            OpenAI direct
-  --model bedrock/amazon.nova-lite-v1:0  AWS Nova Lite
+  --model gemini-3-flash-preview     Gemini 3 Flash (default)
+  --model gemini-2.5-flash           Gemini 2.5 Flash
+  --model gemini-2.5-flash-lite      Gemini 2.5 Flash Lite (cheapest)
+  --model gemini-2.5-pro             Gemini 2.5 Pro (best quality)
         """,
     )
     parser.add_argument("--data-dir", type=Path, default=Path("final/train"))
     parser.add_argument("--output", type=Path, default=Path("data/reasoning/observations.jsonl"))
-    parser.add_argument("--model", default="vertex_ai/gemini-3-flash-preview", help="litellm model string")
+    parser.add_argument("--model", default="gemini-3-flash-preview", help="Gemini model name")
+    parser.add_argument("--project", default=None, help="GCP project ID (default: from gcloud config)")
+    parser.add_argument("--location", default="global", help="Vertex AI location (default: global)")
     parser.add_argument("--limit", type=int, default=None, help="Max images per class")
     parser.add_argument("--delay", type=float, default=0.1, help="Seconds between API calls")
     parser.add_argument("--workers", type=int, default=8, help="Parallel workers (default: 8)")
@@ -212,7 +208,13 @@ Model examples:
     parser.add_argument("--classes", nargs="+", default=None, help="Specific classes (default: all)")
     args = parser.parse_args()
 
-    print(f"Model: {args.model} | Workers: {args.workers}")
+    print(f"Model: {args.model} | Workers: {args.workers} | Location: {args.location}")
+
+    client = genai.Client(
+        vertexai=True,
+        project=args.project,
+        location=args.location,
+    )
 
     images = collect_images(args.data_dir, args.classes)
     print(f"Found {len(images)} images")
@@ -233,20 +235,16 @@ Model examples:
 
     done = load_progress(args.output)
 
-    # If retrying flagged, load them and clear the flagged file
     if args.retry_flagged and flagged_path.exists():
-        flagged_images = []
+        flagged_paths = set()
         with open(flagged_path) as f:
             for line in f:
                 try:
                     entry = json.loads(line)
-                    flagged_images.append({"path": entry["image_path"], "label": entry["label"]})
+                    flagged_paths.add(entry["image_path"])
                 except (json.JSONDecodeError, KeyError):
                     continue
-        # Remove flagged entries from done so they get reprocessed
-        flagged_paths = {img["path"] for img in flagged_images}
         print(f"Retrying {len(flagged_paths)} previously flagged images")
-        # Clear flagged file
         flagged_path.write_text("")
         remaining = [img for img in images if img["path"] not in done or img["path"] in flagged_paths]
     else:
@@ -266,7 +264,7 @@ Model examples:
     def process_image(img: dict) -> None:
         nonlocal failed, flagged_count, processed
         try:
-            result, blocked_reason = observe_image(img["path"], args.model)
+            result, blocked_reason = observe_image(client, img["path"], args.model)
 
             with lock:
                 if blocked_reason:
