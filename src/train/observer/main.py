@@ -96,8 +96,20 @@ def parse_response(text: str) -> dict | None:
         return None
 
 
-def observe_image(client: genai.Client, image_path: str, model: str) -> dict | None:
-    """Send image to Gemini and get pure visual description."""
+SAFETY_SETTINGS = [
+    types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="BLOCK_NONE"),
+    types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="BLOCK_NONE"),
+    types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_NONE"),
+    types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_NONE"),
+]
+
+
+def observe_image(client: genai.Client, image_path: str, model: str) -> tuple[dict | None, str | None]:
+    """Send image to Gemini and get pure visual description.
+
+    Returns (result, blocked_reason). If blocked, result is None and
+    blocked_reason describes why.
+    """
     img = Image.open(image_path).convert("RGB")
 
     buf = io.BytesIO()
@@ -115,11 +127,27 @@ def observe_image(client: genai.Client, image_path: str, model: str) -> dict | N
                 ],
             )
         ],
+        config=types.GenerateContentConfig(safety_settings=SAFETY_SETTINGS),
     )
 
+    # Check if blocked by safety filters
+    if response.candidates and response.candidates[0].finish_reason:
+        reason = str(response.candidates[0].finish_reason)
+        if reason in ("SAFETY", "RECITATION", "BLOCKED"):
+            ratings = []
+            if response.candidates[0].safety_ratings:
+                ratings = [
+                    f"{r.category}:{r.probability}" for r in response.candidates[0].safety_ratings
+                ]
+            return None, f"{reason} | {', '.join(ratings)}"
+
     if not response.text:
-        return None
-    return parse_response(response.text)
+        return None, "empty_response"
+
+    parsed = parse_response(response.text)
+    if parsed is None:
+        return None, "json_parse_error"
+    return parsed, None
 
 
 def main():
@@ -162,14 +190,24 @@ def main():
         print("Nothing to do.")
         return
 
+    flagged_path = args.output.parent / "flagged.jsonl"
     failed = 0
-    with open(args.output, "a") as out:
+    flagged = 0
+    with open(args.output, "a") as out, open(flagged_path, "a") as flagged_out:
         for img in tqdm(remaining, desc="Observing images"):
             try:
-                result = observe_image(client, img["path"], args.model)
-                if result is None:
-                    print(f"\nFailed to parse: {img['path']}")
-                    failed += 1
+                result, blocked_reason = observe_image(client, img["path"], args.model)
+
+                if blocked_reason:
+                    flagged += 1
+                    flagged_entry = {
+                        "image_path": img["path"],
+                        "label": img["label"],
+                        "reason": blocked_reason,
+                    }
+                    flagged_out.write(json.dumps(flagged_entry) + "\n")
+                    flagged_out.flush()
+                    print(f"\nFlagged: {img['path']} — {blocked_reason}")
                     continue
 
                 entry = {
@@ -186,8 +224,10 @@ def main():
 
             time.sleep(args.delay)
 
-    print(f"\nDone. Processed: {len(remaining) - failed}, Failed: {failed}")
+    print(f"\nDone. Processed: {len(remaining) - failed - flagged}, Flagged: {flagged}, Failed: {failed}")
     print(f"Output: {args.output}")
+    if flagged > 0:
+        print(f"Flagged images: {flagged_path}")
 
 
 if __name__ == "__main__":

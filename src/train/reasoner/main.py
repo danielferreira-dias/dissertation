@@ -135,8 +135,12 @@ def generate_reasoning(
     category: str,
     observation: dict,
     model: str,
-) -> dict | None:
-    """Send image + observation + label to GPT and get structured reasoning."""
+) -> tuple[dict | None, str | None]:
+    """Send image + observation + label to GPT and get structured reasoning.
+
+    Returns (result, blocked_reason). If blocked by content filter,
+    result is None and blocked_reason describes why.
+    """
     obs_text = format_observation(observation)
     prompt = REASONER_PROMPT.format(
         diagnosis=label.replace("_", " ").title(),
@@ -148,25 +152,41 @@ def generate_reasoning(
     ext = Path(image_path).suffix.lower().lstrip(".")
     mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp"}.get(ext, "image/jpeg")
 
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{image_b64}", "detail": "high"}},
-                    {"type": "text", "text": prompt},
-                ],
-            }
-        ],
-        max_tokens=1024,
-        temperature=0.2,
-    )
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{image_b64}", "detail": "high"}},
+                        {"type": "text", "text": prompt},
+                    ],
+                }
+            ],
+            max_tokens=1024,
+            temperature=0.2,
+        )
+    except Exception as e:
+        error_msg = str(e)
+        if "content_filter" in error_msg.lower() or "content management" in error_msg.lower():
+            return None, f"content_filter | {error_msg[:200]}"
+        raise
 
-    text = response.choices[0].message.content
+    choice = response.choices[0]
+
+    # Azure returns finish_reason="content_filter" when blocked
+    if choice.finish_reason == "content_filter":
+        return None, f"content_filter | finish_reason=content_filter"
+
+    text = choice.message.content
     if not text:
-        return None
-    return parse_response(text)
+        return None, "empty_response"
+
+    parsed = parse_response(text)
+    if parsed is None:
+        return None, "json_parse_error"
+    return parsed, None
 
 
 def main():
@@ -211,8 +231,10 @@ def main():
         print("Nothing to do.")
         return
 
+    flagged_path = args.output.parent / "flagged_reasoner.jsonl"
     failed = 0
-    with open(args.output, "a") as out:
+    flagged = 0
+    with open(args.output, "a") as out, open(flagged_path, "a") as flagged_out:
         for obs in tqdm(remaining, desc="Generating reasoning"):
             image_path = obs["image_path"]
             label = obs["label"]
@@ -220,12 +242,21 @@ def main():
             observation = obs.get("observation", {})
 
             try:
-                result = generate_reasoning(
+                result, blocked_reason = generate_reasoning(
                     client, image_path, label, category, observation, args.model
                 )
-                if result is None:
-                    print(f"\nFailed to parse: {image_path}")
-                    failed += 1
+
+                if blocked_reason:
+                    flagged += 1
+                    flagged_entry = {
+                        "image_path": image_path,
+                        "label": label,
+                        "category": category,
+                        "reason": blocked_reason,
+                    }
+                    flagged_out.write(json.dumps(flagged_entry) + "\n")
+                    flagged_out.flush()
+                    print(f"\nFlagged: {image_path} — {blocked_reason}")
                     continue
 
                 entry = {
@@ -245,8 +276,10 @@ def main():
 
             time.sleep(args.delay)
 
-    print(f"\nDone. Processed: {len(remaining) - failed}, Failed: {failed}")
+    print(f"\nDone. Processed: {len(remaining) - failed - flagged}, Flagged: {flagged}, Failed: {failed}")
     print(f"Output: {args.output}")
+    if flagged > 0:
+        print(f"Flagged images: {flagged_path}")
 
 
 def _detect_source(image_path: str) -> str:
