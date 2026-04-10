@@ -3,11 +3,13 @@ Stage 1: Observer — Generate visual descriptions for dermatology images.
 
 Describes images WITHOUT any diagnosis knowledge using any vision-capable LLM.
 
-Quick start (tested config — Gemini 3 Flash on Vertex AI):
-  VERTEXAI_LOCATION=global python3 src/train/observer/main.py --model vertex_ai/gemini-3-flash-preview --data-dir final/train --delay 1
+Quick start (tested config — Gemini 3 Flash on Vertex AI, 8 parallel workers):
+  VERTEXAI_LOCATION=global python3 src/train/observer/main.py --model vertex_ai/gemini-3-flash-preview --data-dir final/train --workers 8
 
 Test with 5 images:
   VERTEXAI_LOCATION=global python3 src/train/observer/main.py --model vertex_ai/gemini-3-flash-preview --data-dir final/train --limit 1 --classes melanoma psoriasis eczema basal_cell_carcinoma seborrheic_keratosis
+
+Script is resumable — re-run the same command to continue from where it left off.
 
 Other providers:
   python3 src/train/observer/main.py --model anthropic/claude-3-5-haiku-latest
@@ -184,11 +186,12 @@ Model examples:
     parser.add_argument("--output", type=Path, default=Path("data/reasoning/observations.jsonl"))
     parser.add_argument("--model", default="vertex_ai/gemini-3-flash-preview", help="litellm model string")
     parser.add_argument("--limit", type=int, default=None, help="Max images per class")
-    parser.add_argument("--delay", type=float, default=0.5, help="Seconds between API calls")
+    parser.add_argument("--delay", type=float, default=0.1, help="Seconds between API calls")
+    parser.add_argument("--workers", type=int, default=8, help="Parallel workers (default: 8)")
     parser.add_argument("--classes", nargs="+", default=None, help="Specific classes (default: all)")
     args = parser.parse_args()
 
-    print(f"Model: {args.model}")
+    print(f"Model: {args.model} | Workers: {args.workers}")
 
     images = collect_images(args.data_dir, args.classes)
     print(f"Found {len(images)} images")
@@ -215,14 +218,18 @@ Model examples:
 
     flagged_path = args.output.parent / "flagged.jsonl"
     failed = 0
-    flagged = 0
-    with open(args.output, "a") as out, open(flagged_path, "a") as flagged_out:
-        for img in tqdm(remaining, desc="Observing images"):
-            try:
-                result, blocked_reason = observe_image(img["path"], args.model)
+    flagged_count = 0
+    processed = 0
+    lock = __import__("threading").Lock()
 
+    def process_image(img: dict) -> None:
+        nonlocal failed, flagged_count, processed
+        try:
+            result, blocked_reason = observe_image(img["path"], args.model)
+
+            with lock:
                 if blocked_reason:
-                    flagged += 1
+                    flagged_count += 1
                     flagged_entry = {
                         "image_path": img["path"],
                         "label": img["label"],
@@ -230,26 +237,36 @@ Model examples:
                     }
                     flagged_out.write(json.dumps(flagged_entry) + "\n")
                     flagged_out.flush()
-                    print(f"\nFlagged: {img['path']} — {blocked_reason}")
-                    continue
+                else:
+                    entry = {
+                        "image_path": img["path"],
+                        "label": img["label"],
+                        "observation": result,
+                    }
+                    out.write(json.dumps(entry) + "\n")
+                    out.flush()
+                    processed += 1
 
-                entry = {
-                    "image_path": img["path"],
-                    "label": img["label"],
-                    "observation": result,
-                }
-                out.write(json.dumps(entry) + "\n")
-                out.flush()
-
-            except Exception as e:
-                print(f"\nError: {img['path']}: {e}")
+        except Exception as e:
+            with lock:
                 failed += 1
+                tqdm.write(f"Error: {img['path']}: {e}")
 
-            time.sleep(args.delay)
+        time.sleep(args.delay)
 
-    print(f"\nDone. Processed: {len(remaining) - failed - flagged}, Flagged: {flagged}, Failed: {failed}")
+    from concurrent.futures import ThreadPoolExecutor
+
+    with open(args.output, "a") as out, open(flagged_path, "a") as flagged_out:
+        with ThreadPoolExecutor(max_workers=args.workers) as pool:
+            list(tqdm(
+                pool.map(process_image, remaining),
+                total=len(remaining),
+                desc="Observing images",
+            ))
+
+    print(f"\nDone. Processed: {processed}, Flagged: {flagged_count}, Failed: {failed}")
     print(f"Output: {args.output}")
-    if flagged > 0:
+    if flagged_count > 0:
         print(f"Flagged images: {flagged_path}")
 
 
