@@ -1,0 +1,262 @@
+"""
+Stage 2: Reasoner — Generate structured clinical reasoning from observations.
+
+Takes Stage 1 observations + ground-truth labels + images and generates
+structured diagnostic reasoning using Azure GPT-5.4-mini.
+
+Usage:
+  python src/train/reasoner/main.py --observations data/reasoning/observations.jsonl
+  python src/train/reasoner/main.py --observations data/reasoning/observations.jsonl --limit 10
+"""
+
+import argparse
+import base64
+import json
+import os
+import time
+from pathlib import Path
+
+from dotenv import load_dotenv
+from openai import AzureOpenAI
+from tqdm import tqdm
+
+load_dotenv()
+
+# Load category mapping
+MAPPING_PATH = Path(__file__).resolve().parent.parent / "category_mapping.json"
+
+
+def load_category_mapping() -> dict[str, str]:
+    """Load the 335-class → 4-category mapping."""
+    with open(MAPPING_PATH) as f:
+        mapping = json.load(f)
+    mapping.pop("_meta", None)
+    return mapping
+
+
+REASONER_PROMPT = """You are a board-certified dermatologist generating structured clinical reasoning for a medical AI training dataset.
+
+INPUTS:
+- An image of a skin condition
+- A visual observation (from a separate observer who did NOT know the diagnosis)
+- The confirmed expert diagnosis: {diagnosis}
+- Clinical category: {category}
+
+TASK:
+Using the image AND the observation, generate structured diagnostic reasoning that explains WHY the visual features support this diagnosis. Also provide differential diagnoses with contrastive reasoning (why those conditions are LESS likely).
+
+RULES:
+- The observation may miss features — look at the image yourself and add anything relevant.
+- If the image clearly shows a DIFFERENT condition than {diagnosis}, set label_match to false.
+- Adapt descriptions to the patient's skin tone.
+- Be specific and clinical, not generic.
+- Differentials should be conditions that look similar to this case, not random conditions.
+
+VISUAL OBSERVATION FROM STAGE 1:
+{observation}
+
+Respond with ONLY a JSON object:
+{{
+  "morphology": "refined morphology connecting features to {diagnosis}",
+  "color": "refined color description",
+  "texture": "refined texture description",
+  "border": "refined border description",
+  "distribution": "anatomical location and pattern",
+  "clinical_reasoning": "2-4 sentences explaining WHY these features support {diagnosis}",
+  "differentials": [
+    {{"condition": "most similar condition", "why_not": "why it's less likely than {diagnosis}"}},
+    {{"condition": "second similar condition", "why_not": "why it's less likely"}}
+  ],
+  "confidence": "low | medium | high",
+  "label_match": true or false
+}}
+
+No markdown, no code fences. Only the JSON object."""
+
+
+def load_observations(path: Path) -> list[dict]:
+    """Load Stage 1 observations."""
+    entries = []
+    with open(path) as f:
+        for line in f:
+            try:
+                entries.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+    return entries
+
+
+def load_progress(output_path: Path) -> set[str]:
+    """Load already-processed image paths."""
+    done = set()
+    if output_path.exists():
+        with open(output_path) as f:
+            for line in f:
+                try:
+                    entry = json.loads(line)
+                    done.add(entry["image_path"])
+                except (json.JSONDecodeError, KeyError):
+                    continue
+    return done
+
+
+def parse_response(text: str) -> dict | None:
+    """Parse JSON response, handling markdown fences."""
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+        text = text.rsplit("```", 1)[0].strip()
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        return None
+
+
+def encode_image(image_path: str) -> str:
+    """Encode image to base64 for Azure OpenAI API."""
+    with open(image_path, "rb") as f:
+        return base64.b64encode(f.read()).decode("utf-8")
+
+
+def format_observation(obs: dict) -> str:
+    """Format Stage 1 observation dict into readable text."""
+    parts = []
+    for key in ["morphology", "color", "texture", "border", "distribution", "size_extent", "additional_features"]:
+        val = obs.get(key, "")
+        if val:
+            parts.append(f"- {key.replace('_', ' ').title()}: {val}")
+    return "\n".join(parts)
+
+
+def generate_reasoning(
+    client: AzureOpenAI,
+    image_path: str,
+    label: str,
+    category: str,
+    observation: dict,
+    model: str,
+) -> dict | None:
+    """Send image + observation + label to GPT and get structured reasoning."""
+    obs_text = format_observation(observation)
+    prompt = REASONER_PROMPT.format(
+        diagnosis=label.replace("_", " ").title(),
+        category=category,
+        observation=obs_text,
+    )
+
+    image_b64 = encode_image(image_path)
+    ext = Path(image_path).suffix.lower().lstrip(".")
+    mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp"}.get(ext, "image/jpeg")
+
+    response = client.chat.completions.create(
+        model=model,
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{image_b64}", "detail": "high"}},
+                    {"type": "text", "text": prompt},
+                ],
+            }
+        ],
+        max_tokens=1024,
+        temperature=0.2,
+    )
+
+    text = response.choices[0].message.content
+    if not text:
+        return None
+    return parse_response(text)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Stage 2: Reasoner — structured clinical reasoning")
+    parser.add_argument("--observations", type=Path, default=Path("data/reasoning/observations.jsonl"))
+    parser.add_argument("--output", type=Path, default=Path("data/reasoning/reasoning.jsonl"))
+    parser.add_argument("--model", default="gpt-5.4-mini", help="Azure OpenAI deployment name")
+    parser.add_argument("--limit", type=int, default=None, help="Max entries to process")
+    parser.add_argument("--delay", type=float, default=0.2, help="Seconds between API calls")
+    args = parser.parse_args()
+
+    # Azure OpenAI client
+    endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+    api_key = os.getenv("AZURE_OPENAI_API_KEY")
+    api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
+
+    if not endpoint or not api_key:
+        print("Error: Set AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY in .env")
+        return
+
+    client = AzureOpenAI(
+        azure_endpoint=endpoint,
+        api_key=api_key,
+        api_version=api_version,
+    )
+
+    category_mapping = load_category_mapping()
+
+    observations = load_observations(args.observations)
+    print(f"Loaded {len(observations)} observations")
+
+    if args.limit:
+        observations = observations[: args.limit]
+        print(f"Limited to {len(observations)}")
+
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    done = load_progress(args.output)
+    remaining = [obs for obs in observations if obs["image_path"] not in done]
+    print(f"Already processed: {len(done)}, remaining: {len(remaining)}")
+
+    if not remaining:
+        print("Nothing to do.")
+        return
+
+    failed = 0
+    with open(args.output, "a") as out:
+        for obs in tqdm(remaining, desc="Generating reasoning"):
+            image_path = obs["image_path"]
+            label = obs["label"]
+            category = category_mapping.get(label, "benign")
+            observation = obs.get("observation", {})
+
+            try:
+                result = generate_reasoning(
+                    client, image_path, label, category, observation, args.model
+                )
+                if result is None:
+                    print(f"\nFailed to parse: {image_path}")
+                    failed += 1
+                    continue
+
+                entry = {
+                    "image_path": image_path,
+                    "ground_truth": label,
+                    "category": category,
+                    "dataset_source": _detect_source(image_path),
+                    "observation": observation,
+                    "reasoning": result,
+                }
+                out.write(json.dumps(entry) + "\n")
+                out.flush()
+
+            except Exception as e:
+                print(f"\nError: {image_path}: {e}")
+                failed += 1
+
+            time.sleep(args.delay)
+
+    print(f"\nDone. Processed: {len(remaining) - failed}, Failed: {failed}")
+    print(f"Output: {args.output}")
+
+
+def _detect_source(image_path: str) -> str:
+    """Detect which dataset an image came from based on path."""
+    path_lower = image_path.lower()
+    for source in ["fitzpatrick17k", "skincap", "dermnet_nz", "kaggle_dermnet", "pad_ufes", "scin"]:
+        if source in path_lower:
+            return source
+    return "unknown"
+
+
+if __name__ == "__main__":
+    main()

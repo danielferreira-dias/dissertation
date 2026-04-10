@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Observer Output",
+  "description": "Pure visual description of a dermatology image. NO diagnosis, NO label knowledge.",
+  "type": "object",
+  "properties": {
+    "morphology": {
+      "type": "string",
+      "description": "Primary lesion type and arrangement (e.g., 'solitary well-demarcated plaque', 'grouped vesicles on erythematous base')"
+    },
+    "color": {
+      "type": "string",
+      "description": "Color description adapted to observed skin tone (e.g., 'salmon pink with silvery-white overlay', 'hyperpigmented dark brown macule')"
+    },
+    "texture": {
+      "type": "string",
+      "description": "Surface characteristics (e.g., 'thick adherent silvery scales', 'smooth dome-shaped', 'crusted and ulcerated')"
+    },
+    "border": {
+      "type": "string",
+      "description": "Border characteristics (e.g., 'sharply demarcated, slightly raised', 'irregular and asymmetric', 'diffuse and indistinct')"
+    },
+    "distribution": {
+      "type": "string",
+      "description": "Anatomical location and pattern (e.g., 'bilateral extensor surfaces (elbows)', 'scalp and nasolabial folds')"
+    },
+    "size_extent": {
+      "type": "string",
+      "description": "Estimated size or extent (e.g., '<1cm papule', '3-5cm plaque', 'diffuse patches covering forearms')"
+    },
+    "additional_features": {
+      "type": "string",
+      "description": "Any other notable visual features (e.g., 'Auspitz sign visible', 'satellite lesions present', 'central ulceration')"
+    },
+    "image_quality": {
+      "type": "string",
+      "enum": ["good", "acceptable", "poor"],
+      "description": "Overall image quality for clinical assessment"
+    },
+    "estimated_fitzpatrick": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 6,
+      "description": "Estimated Fitzpatrick skin type from the image"
+    }
+  },
+  "required": ["morphology", "color", "texture", "border", "distribution", "size_extent", "image_quality", "estimated_fitzpatrick"]
+}

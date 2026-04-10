@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Reasoner Output",
+  "description": "Structured clinical reasoning generated from image + observation + ground-truth label.",
+  "type": "object",
+  "properties": {
+    "diagnosis": {
+      "type": "string",
+      "description": "Ground-truth diagnosis (passed through from label)"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["inflammatory", "malignant", "benign", "infectious"],
+      "description": "Clinical category from category_mapping.json"
+    },
+    "observation": {
+      "type": "string",
+      "description": "Visual observation from Stage 1 Observer (passed through)"
+    },
+    "morphology": {
+      "type": "string",
+      "description": "Refined morphology assessment connecting features to diagnosis"
+    },
+    "color": {
+      "type": "string",
+      "description": "Refined color assessment connecting features to diagnosis"
+    },
+    "texture": {
+      "type": "string",
+      "description": "Refined texture assessment connecting features to diagnosis"
+    },
+    "border": {
+      "type": "string",
+      "description": "Refined border assessment connecting features to diagnosis"
+    },
+    "distribution": {
+      "type": "string",
+      "description": "Anatomical location and pattern"
+    },
+    "clinical_reasoning": {
+      "type": "string",
+      "description": "2-4 sentences connecting the visual observations to the diagnosis. Explain WHY these features support this specific condition."
+    },
+    "differentials": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "condition": { "type": "string" },
+          "why_not": { "type": "string" }
+        },
+        "required": ["condition", "why_not"]
+      },
+      "minItems": 2,
+      "maxItems": 4,
+      "description": "Top 2-4 differential diagnoses with contrastive reasoning"
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["low", "medium", "high"],
+      "description": "Confidence that the visual features support the given diagnosis"
+    },
+    "label_match": {
+      "type": "boolean",
+      "description": "False if the image clearly shows a different condition than the label"
+    }
+  },
+  "required": ["diagnosis", "category", "observation", "morphology", "color", "texture", "border", "distribution", "clinical_reasoning", "differentials", "confidence", "label_match"]
+}
