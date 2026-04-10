@@ -3,18 +3,35 @@ Stage 1: Observer — Generate visual descriptions for dermatology images.
 
 Describes images WITHOUT any diagnosis knowledge using any vision-capable LLM.
 
-Usage:
-  python src/train/observer/main.py --model gemini/gemini-2.5-flash --limit 5
+Quick start (tested config — Gemini 3 Flash on Vertex AI):
+  export VERTEXAI_LOCATION=global
+  python src/train/observer/main.py \\
+      --model vertex_ai/gemini-3-flash-preview \\
+      --data-dir final/train \\
+      --delay 1
+
+Test with 5 images:
+  VERTEXAI_LOCATION=global python src/train/observer/main.py \\
+      --model vertex_ai/gemini-3-flash-preview \\
+      --data-dir final/train \\
+      --limit 1 --classes melanoma psoriasis eczema basal_cell_carcinoma seborrheic_keratosis
+
+Other providers:
   python src/train/observer/main.py --model anthropic/claude-3-5-haiku-latest
+  python src/train/observer/main.py --model openai/gpt-4o-mini
   python src/train/observer/main.py --model azure/gpt-4o-mini
   python src/train/observer/main.py --model bedrock/amazon.nova-lite-v1:0
 
 Supported providers (set env vars):
+  Vertex AI: gcloud auth application-default login (+ VERTEXAI_LOCATION=global)
   Azure:     AZURE_API_KEY, AZURE_API_BASE, AZURE_API_VERSION
   AWS:       AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION_NAME
   Anthropic: ANTHROPIC_API_KEY
   Google:    GEMINI_API_KEY
   OpenAI:    OPENAI_API_KEY
+
+Output: data/reasoning/observations.jsonl
+Flagged: data/reasoning/flagged.jsonl
 """
 
 import argparse
@@ -131,7 +148,7 @@ def observe_image(image_path: str, model: str) -> tuple[dict | None, str | None]
                     ],
                 }
             ],
-            max_tokens=512,
+            max_tokens=1024,
             temperature=0.2,
         )
     except Exception as e:
@@ -172,7 +189,7 @@ Model examples:
     )
     parser.add_argument("--data-dir", type=Path, default=Path("final/train"))
     parser.add_argument("--output", type=Path, default=Path("data/reasoning/observations.jsonl"))
-    parser.add_argument("--model", default="gemini/gemini-2.5-flash", help="litellm model string")
+    parser.add_argument("--model", default="vertex_ai/gemini-3-flash-preview", help="litellm model string")
     parser.add_argument("--limit", type=int, default=None, help="Max images per class")
     parser.add_argument("--delay", type=float, default=0.5, help="Seconds between API calls")
     parser.add_argument("--classes", nargs="+", default=None, help="Specific classes (default: all)")

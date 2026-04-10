@@ -4,19 +4,33 @@ Stage 2: Reasoner — Generate structured clinical reasoning from observations.
 Takes Stage 1 observations + ground-truth labels + images and generates
 structured diagnostic reasoning using any vision-capable LLM via litellm.
 
-Usage:
-  python src/train/reasoner/main.py --model azure/gpt-4.1-mini --limit 10
-  python src/train/reasoner/main.py --model anthropic/claude-3-5-haiku-latest
-  python src/train/reasoner/main.py --model bedrock/anthropic.claude-3-5-haiku
-  python src/train/reasoner/main.py --model gemini/gemini-2.5-flash
+Quick start (run after Stage 1 observer completes):
+  python src/train/reasoner/main.py \\
+      --model anthropic/claude-3-5-haiku-latest \\
+      --observations data/reasoning/observations.jsonl
+
+Test with 5 entries:
+  python src/train/reasoner/main.py \\
+      --model anthropic/claude-3-5-haiku-latest \\
+      --limit 5
+
+Other providers:
+  python src/train/reasoner/main.py --model azure/gpt-4.1-mini
   python src/train/reasoner/main.py --model openai/gpt-4.1-mini
+  python src/train/reasoner/main.py --model vertex_ai/gemini-2.5-pro
+  python src/train/reasoner/main.py --model bedrock/anthropic.claude-3-5-haiku
 
 Supported providers (set env vars):
+  Vertex AI: gcloud auth application-default login (+ VERTEXAI_LOCATION=global)
   Azure:     AZURE_API_KEY, AZURE_API_BASE, AZURE_API_VERSION
   AWS:       AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION_NAME
   Anthropic: ANTHROPIC_API_KEY
   Google:    GEMINI_API_KEY
   OpenAI:    OPENAI_API_KEY
+
+Input:   data/reasoning/observations.jsonl (from Stage 1)
+Output:  data/reasoning/reasoning.jsonl
+Flagged: data/reasoning/flagged_reasoner.jsonl
 """
 
 import argparse
