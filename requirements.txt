@@ -40,6 +40,7 @@ typing-inspection==0.4.2
 urllib3==2.6.3
 webencodings==0.5.1
 websockets==16.0
+litellm>=1.83.4,!=1.82.7,!=1.82.8
 
 # GPU evaluation dependencies (install on RunPod)
 # vllm>=0.19.0

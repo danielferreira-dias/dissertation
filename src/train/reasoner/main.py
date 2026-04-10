@@ -2,11 +2,21 @@
 Stage 2: Reasoner — Generate structured clinical reasoning from observations.
 
 Takes Stage 1 observations + ground-truth labels + images and generates
-structured diagnostic reasoning using Azure GPT-5.4-mini.
+structured diagnostic reasoning using any vision-capable LLM via litellm.
 
 Usage:
-  python src/train/reasoner/main.py --observations data/reasoning/observations.jsonl
-  python src/train/reasoner/main.py --observations data/reasoning/observations.jsonl --limit 10
+  python src/train/reasoner/main.py --model azure/gpt-4.1-mini --limit 10
+  python src/train/reasoner/main.py --model anthropic/claude-3-5-haiku-latest
+  python src/train/reasoner/main.py --model bedrock/anthropic.claude-3-5-haiku
+  python src/train/reasoner/main.py --model gemini/gemini-2.5-flash
+  python src/train/reasoner/main.py --model openai/gpt-4.1-mini
+
+Supported providers (set env vars):
+  Azure:     AZURE_API_KEY, AZURE_API_BASE, AZURE_API_VERSION
+  AWS:       AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION_NAME
+  Anthropic: ANTHROPIC_API_KEY
+  Google:    GEMINI_API_KEY
+  OpenAI:    OPENAI_API_KEY
 """
 
 import argparse
@@ -16,13 +26,15 @@ import os
 import time
 from pathlib import Path
 
+import litellm
 from dotenv import load_dotenv
-from openai import AzureOpenAI
 from tqdm import tqdm
 
 load_dotenv()
 
-# Load category mapping
+# Suppress litellm debug logging
+litellm.suppress_debug_info = True
+
 MAPPING_PATH = Path(__file__).resolve().parent.parent / "category_mapping.json"
 
 
@@ -112,10 +124,13 @@ def parse_response(text: str) -> dict | None:
         return None
 
 
-def encode_image(image_path: str) -> str:
-    """Encode image to base64 for Azure OpenAI API."""
+def encode_image(image_path: str) -> tuple[str, str]:
+    """Encode image to base64 and detect mime type."""
+    ext = Path(image_path).suffix.lower().lstrip(".")
+    mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp"}.get(ext, "image/jpeg")
     with open(image_path, "rb") as f:
-        return base64.b64encode(f.read()).decode("utf-8")
+        b64 = base64.b64encode(f.read()).decode("utf-8")
+    return b64, mime
 
 
 def format_observation(obs: dict) -> str:
@@ -129,17 +144,15 @@ def format_observation(obs: dict) -> str:
 
 
 def generate_reasoning(
-    client: AzureOpenAI,
     image_path: str,
     label: str,
     category: str,
     observation: dict,
     model: str,
 ) -> tuple[dict | None, str | None]:
-    """Send image + observation + label to GPT and get structured reasoning.
+    """Send image + observation + label to any LLM via litellm.
 
-    Returns (result, blocked_reason). If blocked by content filter,
-    result is None and blocked_reason describes why.
+    Returns (result, blocked_reason).
     """
     obs_text = format_observation(observation)
     prompt = REASONER_PROMPT.format(
@@ -148,12 +161,10 @@ def generate_reasoning(
         observation=obs_text,
     )
 
-    image_b64 = encode_image(image_path)
-    ext = Path(image_path).suffix.lower().lstrip(".")
-    mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp"}.get(ext, "image/jpeg")
+    image_b64, mime = encode_image(image_path)
 
     try:
-        response = client.chat.completions.create(
+        response = litellm.completion(
             model=model,
             messages=[
                 {
@@ -168,16 +179,15 @@ def generate_reasoning(
             temperature=0.2,
         )
     except Exception as e:
-        error_msg = str(e)
-        if "content_filter" in error_msg.lower() or "content management" in error_msg.lower():
-            return None, f"content_filter | {error_msg[:200]}"
+        error_msg = str(e).lower()
+        if any(kw in error_msg for kw in ["content_filter", "content management", "safety", "blocked"]):
+            return None, f"content_filter | {str(e)[:200]}"
         raise
 
     choice = response.choices[0]
 
-    # Azure returns finish_reason="content_filter" when blocked
     if choice.finish_reason == "content_filter":
-        return None, f"content_filter | finish_reason=content_filter"
+        return None, "content_filter | finish_reason=content_filter"
 
     text = choice.message.content
     if not text:
@@ -189,29 +199,36 @@ def generate_reasoning(
     return parsed, None
 
 
+def _detect_source(image_path: str) -> str:
+    """Detect which dataset an image came from based on path."""
+    path_lower = image_path.lower()
+    for source in ["fitzpatrick17k", "skincap", "dermnet_nz", "kaggle_dermnet", "pad_ufes", "scin"]:
+        if source in path_lower:
+            return source
+    return "unknown"
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Stage 2: Reasoner — structured clinical reasoning")
+    parser = argparse.ArgumentParser(
+        description="Stage 2: Reasoner — structured clinical reasoning via any LLM",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Model examples:
+  --model azure/gpt-4.1-mini          Azure OpenAI
+  --model anthropic/claude-3-5-haiku-latest  Anthropic direct
+  --model bedrock/anthropic.claude-3-5-haiku AWS Bedrock
+  --model gemini/gemini-2.5-flash      Google Gemini
+  --model openai/gpt-4.1-mini         OpenAI direct
+        """,
+    )
     parser.add_argument("--observations", type=Path, default=Path("data/reasoning/observations.jsonl"))
     parser.add_argument("--output", type=Path, default=Path("data/reasoning/reasoning.jsonl"))
-    parser.add_argument("--model", default="gpt-5.4-mini", help="Azure OpenAI deployment name")
+    parser.add_argument("--model", default="anthropic/claude-3-5-haiku-latest", help="litellm model string")
     parser.add_argument("--limit", type=int, default=None, help="Max entries to process")
     parser.add_argument("--delay", type=float, default=0.2, help="Seconds between API calls")
     args = parser.parse_args()
 
-    # Azure OpenAI client
-    endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
-    api_key = os.getenv("AZURE_OPENAI_API_KEY")
-    api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
-
-    if not endpoint or not api_key:
-        print("Error: Set AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY in .env")
-        return
-
-    client = AzureOpenAI(
-        azure_endpoint=endpoint,
-        api_key=api_key,
-        api_version=api_version,
-    )
+    print(f"Model: {args.model}")
 
     category_mapping = load_category_mapping()
 
@@ -243,7 +260,7 @@ def main():
 
             try:
                 result, blocked_reason = generate_reasoning(
-                    client, image_path, label, category, observation, args.model
+                    image_path, label, category, observation, args.model
                 )
 
                 if blocked_reason:
@@ -280,15 +297,6 @@ def main():
     print(f"Output: {args.output}")
     if flagged > 0:
         print(f"Flagged images: {flagged_path}")
-
-
-def _detect_source(image_path: str) -> str:
-    """Detect which dataset an image came from based on path."""
-    path_lower = image_path.lower()
-    for source in ["fitzpatrick17k", "skincap", "dermnet_nz", "kaggle_dermnet", "pad_ufes", "scin"]:
-        if source in path_lower:
-            return source
-    return "unknown"
 
 
 if __name__ == "__main__":

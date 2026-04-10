@@ -1,28 +1,35 @@
 """
 Stage 1: Observer — Generate visual descriptions for dermatology images.
 
-Uses Gemini 3 Flash to describe images WITHOUT any diagnosis knowledge.
-The observer sees only the image, producing pure visual observations.
+Describes images WITHOUT any diagnosis knowledge using any vision-capable LLM.
 
 Usage:
-  python src/train/observer/main.py --data-dir final/train --output data/reasoning/observations.jsonl
-  python src/train/observer/main.py --data-dir final/train --limit 5 --classes melanoma psoriasis
+  python src/train/observer/main.py --model gemini/gemini-2.5-flash --limit 5
+  python src/train/observer/main.py --model anthropic/claude-3-5-haiku-latest
+  python src/train/observer/main.py --model azure/gpt-4o-mini
+  python src/train/observer/main.py --model bedrock/amazon.nova-lite-v1:0
+
+Supported providers (set env vars):
+  Azure:     AZURE_API_KEY, AZURE_API_BASE, AZURE_API_VERSION
+  AWS:       AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION_NAME
+  Anthropic: ANTHROPIC_API_KEY
+  Google:    GEMINI_API_KEY
+  OpenAI:    OPENAI_API_KEY
 """
 
 import argparse
-import io
+import base64
 import json
-import os
 import time
 from pathlib import Path
 
+import litellm
 from dotenv import load_dotenv
-from google import genai
-from google.genai import types
-from PIL import Image
 from tqdm import tqdm
 
 load_dotenv()
+
+litellm.suppress_debug_info = True
 
 OBSERVER_PROMPT = """You are a clinical dermatology observer. Describe ONLY what you see in this image.
 
@@ -96,76 +103,82 @@ def parse_response(text: str) -> dict | None:
         return None
 
 
-SAFETY_SETTINGS = [
-    types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="BLOCK_NONE"),
-    types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="BLOCK_NONE"),
-    types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_NONE"),
-    types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_NONE"),
-]
+def encode_image(image_path: str) -> tuple[str, str]:
+    """Encode image to base64 and detect mime type."""
+    ext = Path(image_path).suffix.lower().lstrip(".")
+    mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp"}.get(ext, "image/jpeg")
+    with open(image_path, "rb") as f:
+        b64 = base64.b64encode(f.read()).decode("utf-8")
+    return b64, mime
 
 
-def observe_image(client: genai.Client, image_path: str, model: str) -> tuple[dict | None, str | None]:
-    """Send image to Gemini and get pure visual description.
+def observe_image(image_path: str, model: str) -> tuple[dict | None, str | None]:
+    """Send image to any LLM via litellm and get pure visual description.
 
-    Returns (result, blocked_reason). If blocked, result is None and
-    blocked_reason describes why.
+    Returns (result, blocked_reason).
     """
-    img = Image.open(image_path).convert("RGB")
+    image_b64, mime = encode_image(image_path)
 
-    buf = io.BytesIO()
-    img.save(buf, format="JPEG")
-    image_bytes = buf.getvalue()
+    try:
+        response = litellm.completion(
+            model=model,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{image_b64}", "detail": "high"}},
+                        {"type": "text", "text": OBSERVER_PROMPT},
+                    ],
+                }
+            ],
+            max_tokens=512,
+            temperature=0.2,
+        )
+    except Exception as e:
+        error_msg = str(e).lower()
+        if any(kw in error_msg for kw in ["content_filter", "content management", "safety", "blocked", "recitation"]):
+            return None, f"content_filter | {str(e)[:200]}"
+        raise
 
-    response = client.models.generate_content(
-        model=model,
-        contents=[
-            types.Content(
-                role="user",
-                parts=[
-                    types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
-                    types.Part.from_text(text=OBSERVER_PROMPT),
-                ],
-            )
-        ],
-        config=types.GenerateContentConfig(safety_settings=SAFETY_SETTINGS),
-    )
+    choice = response.choices[0]
 
-    # Check if blocked by safety filters
-    if response.candidates and response.candidates[0].finish_reason:
-        reason = str(response.candidates[0].finish_reason)
-        if reason in ("SAFETY", "RECITATION", "BLOCKED"):
-            ratings = []
-            if response.candidates[0].safety_ratings:
-                ratings = [
-                    f"{r.category}:{r.probability}" for r in response.candidates[0].safety_ratings
-                ]
-            return None, f"{reason} | {', '.join(ratings)}"
+    if choice.finish_reason in ("content_filter", "safety"):
+        return None, f"content_filter | finish_reason={choice.finish_reason}"
 
-    if not response.text:
+    text = choice.message.content
+    if not text:
         return None, "empty_response"
 
-    parsed = parse_response(response.text)
+    parsed = parse_response(text)
     if parsed is None:
         return None, "json_parse_error"
     return parsed, None
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Stage 1: Observer — visual descriptions")
+    parser = argparse.ArgumentParser(
+        description="Stage 1: Observer — visual descriptions via any LLM",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Model examples:
+  --model gemini/gemini-2.5-flash       Google Gemini
+  --model gemini/gemini-3-flash         Google Gemini 3
+  --model anthropic/claude-3-5-haiku-latest  Anthropic direct
+  --model bedrock/anthropic.claude-3-5-haiku AWS Bedrock
+  --model azure/gpt-4o-mini             Azure OpenAI
+  --model openai/gpt-4o-mini            OpenAI direct
+  --model bedrock/amazon.nova-lite-v1:0  AWS Nova Lite
+        """,
+    )
     parser.add_argument("--data-dir", type=Path, default=Path("final/train"))
     parser.add_argument("--output", type=Path, default=Path("data/reasoning/observations.jsonl"))
-    parser.add_argument("--model", default="gemini-2.5-flash", help="Gemini model (default: gemini-2.5-flash)")
+    parser.add_argument("--model", default="gemini/gemini-2.5-flash", help="litellm model string")
     parser.add_argument("--limit", type=int, default=None, help="Max images per class")
     parser.add_argument("--delay", type=float, default=0.5, help="Seconds between API calls")
     parser.add_argument("--classes", nargs="+", default=None, help="Specific classes (default: all)")
     args = parser.parse_args()
 
-    api_key = os.getenv("GEMINI_API_TOKEN")
-    if not api_key:
-        print("Error: GEMINI_API_TOKEN not set. Add it to .env or export it.")
-        return
-
-    client = genai.Client(api_key=api_key)
+    print(f"Model: {args.model}")
 
     images = collect_images(args.data_dir, args.classes)
     print(f"Found {len(images)} images")
@@ -196,7 +209,7 @@ def main():
     with open(args.output, "a") as out, open(flagged_path, "a") as flagged_out:
         for img in tqdm(remaining, desc="Observing images"):
             try:
-                result, blocked_reason = observe_image(client, img["path"], args.model)
+                result, blocked_reason = observe_image(img["path"], args.model)
 
                 if blocked_reason:
                     flagged += 1
