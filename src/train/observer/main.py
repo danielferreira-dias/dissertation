@@ -4,23 +4,16 @@ Stage 1: Observer — Generate visual descriptions for dermatology images.
 Describes images WITHOUT any diagnosis knowledge using any vision-capable LLM.
 
 Quick start (tested config — Gemini 3 Flash on Vertex AI):
-  export VERTEXAI_LOCATION=global
-  python src/train/observer/main.py \\
-      --model vertex_ai/gemini-3-flash-preview \\
-      --data-dir final/train \\
-      --delay 1
+  VERTEXAI_LOCATION=global python3 src/train/observer/main.py --model vertex_ai/gemini-3-flash-preview --data-dir final/train --delay 1
 
 Test with 5 images:
-  VERTEXAI_LOCATION=global python src/train/observer/main.py \\
-      --model vertex_ai/gemini-3-flash-preview \\
-      --data-dir final/train \\
-      --limit 1 --classes melanoma psoriasis eczema basal_cell_carcinoma seborrheic_keratosis
+  VERTEXAI_LOCATION=global python3 src/train/observer/main.py --model vertex_ai/gemini-3-flash-preview --data-dir final/train --limit 1 --classes melanoma psoriasis eczema basal_cell_carcinoma seborrheic_keratosis
 
 Other providers:
-  python src/train/observer/main.py --model anthropic/claude-3-5-haiku-latest
-  python src/train/observer/main.py --model openai/gpt-4o-mini
-  python src/train/observer/main.py --model azure/gpt-4o-mini
-  python src/train/observer/main.py --model bedrock/amazon.nova-lite-v1:0
+  python3 src/train/observer/main.py --model anthropic/claude-3-5-haiku-latest
+  python3 src/train/observer/main.py --model openai/gpt-4o-mini
+  python3 src/train/observer/main.py --model azure/gpt-4o-mini
+  python3 src/train/observer/main.py --model bedrock/amazon.nova-lite-v1:0
 
 Supported providers (set env vars):
   Vertex AI: gcloud auth application-default login (+ VERTEXAI_LOCATION=global)

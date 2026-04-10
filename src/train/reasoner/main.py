@@ -5,20 +5,16 @@ Takes Stage 1 observations + ground-truth labels + images and generates
 structured diagnostic reasoning using any vision-capable LLM via litellm.
 
 Quick start (run after Stage 1 observer completes):
-  python src/train/reasoner/main.py \\
-      --model anthropic/claude-3-5-haiku-latest \\
-      --observations data/reasoning/observations.jsonl
+  python3 src/train/reasoner/main.py --model anthropic/claude-3-5-haiku-latest
 
 Test with 5 entries:
-  python src/train/reasoner/main.py \\
-      --model anthropic/claude-3-5-haiku-latest \\
-      --limit 5
+  python3 src/train/reasoner/main.py --model anthropic/claude-3-5-haiku-latest --limit 5
 
 Other providers:
-  python src/train/reasoner/main.py --model azure/gpt-4.1-mini
-  python src/train/reasoner/main.py --model openai/gpt-4.1-mini
-  python src/train/reasoner/main.py --model vertex_ai/gemini-2.5-pro
-  python src/train/reasoner/main.py --model bedrock/anthropic.claude-3-5-haiku
+  python3 src/train/reasoner/main.py --model azure/gpt-4.1-mini
+  python3 src/train/reasoner/main.py --model openai/gpt-4.1-mini
+  VERTEXAI_LOCATION=global python3 src/train/reasoner/main.py --model vertex_ai/gemini-2.5-pro
+  python3 src/train/reasoner/main.py --model bedrock/anthropic.claude-3-5-haiku
 
 Supported providers (set env vars):
   Vertex AI: gcloud auth application-default login (+ VERTEXAI_LOCATION=global)
