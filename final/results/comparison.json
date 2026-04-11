@@ -36,10 +36,7 @@
     "mm_skin_vqa": {
       "total": 5452,
       "exact_match": 0.16507703595011006,
-      "containment_match": 0.22010271460014674,
-      "bertscore_precision": 88.85,
-      "bertscore_recall": 89.92,
-      "bertscore_f1": 89.36
+      "containment_match": 0.22010271460014674
     },
     "confusion_triads": {
       "total": 820,
@@ -152,10 +149,7 @@
     "mm_skin_vqa": {
       "total": 5452,
       "exact_match": 0.0,
-      "containment_match": 0.018341892883345562,
-      "bertscore_precision": 87.69,
-      "bertscore_recall": 89.65,
-      "bertscore_f1": 88.64
+      "containment_match": 0.018341892883345562
     },
     "confusion_triads": {
       "total": 820,
@@ -270,10 +264,7 @@
     "mm_skin_vqa": {
       "total": 5452,
       "exact_match": 0.16507703595011006,
-      "containment_match": 0.20176082171680115,
-      "bertscore_precision": 87.16,
-      "bertscore_recall": 89.71,
-      "bertscore_f1": 88.39
+      "containment_match": 0.20176082171680115
     },
     "confusion_triads": {
       "total": 820,
@@ -387,10 +378,7 @@
     "mm_skin_vqa": {
       "total": 5452,
       "exact_match": 0.055025678650036686,
-      "containment_match": 0.055025678650036686,
-      "bertscore_precision": 87.17,
-      "bertscore_recall": 89.65,
-      "bertscore_f1": 88.36
+      "containment_match": 0.055025678650036686
     },
     "confusion_triads": {
       "total": 820,
