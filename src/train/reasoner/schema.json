@@ -62,8 +62,12 @@
     },
     "label_match": {
       "type": "boolean",
-      "description": "False if the image clearly shows a different condition than the label"
+      "description": "Audit-only: reasoner's honest opinion whether the image actually shows the label. Does NOT affect training data — all entries are trained on regardless of this flag."
+    },
+    "label_match_reason": {
+      "type": "string",
+      "description": "Audit-only: reasoner's explanation when label_match=false. Empty string otherwise."
     }
   },
-  "required": ["diagnosis", "category", "observation", "morphology", "color", "texture", "border", "distribution", "clinical_reasoning", "differentials", "confidence", "label_match"]
+  "required": ["diagnosis", "category", "observation", "morphology", "color", "texture", "border", "distribution", "clinical_reasoning", "differentials", "confidence", "label_match", "label_match_reason"]
 }
