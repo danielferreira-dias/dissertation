@@ -2,18 +2,18 @@
   "medgemma-4b": {
     "fitzpatrick17k": {
       "total": 1000,
-      "top1_accuracy": 19.7,
-      "top6_accuracy": 31.1,
-      "top1_correct": 197,
-      "top6_correct": 311,
+      "top1_accuracy": 21.5,
+      "top6_accuracy": 34.599999999999994,
+      "top1_correct": 215,
+      "top6_correct": 346,
       "fairness_by_fst": {
         "FST_1": {
           "total": 207,
-          "top1_accuracy": 22.705314009661837
+          "top1_accuracy": 24.154589371980677
         },
         "FST_2": {
           "total": 296,
-          "top1_accuracy": 20.60810810810811
+          "top1_accuracy": 22.635135135135133
         },
         "FST_3": {
           "total": 197,
@@ -21,22 +21,25 @@
         },
         "FST_4": {
           "total": 170,
-          "top1_accuracy": 21.176470588235293
+          "top1_accuracy": 22.941176470588236
         },
         "FST_5": {
           "total": 94,
-          "top1_accuracy": 20.212765957446805
+          "top1_accuracy": 23.404255319148938
         },
         "FST_6": {
           "total": 36,
-          "top1_accuracy": 25.0
+          "top1_accuracy": 33.33333333333333
         }
       }
     },
     "mm_skin_vqa": {
       "total": 5452,
       "exact_match": 0.16507703595011006,
-      "containment_match": 0.22010271460014674
+      "containment_match": 0.22010271460014674,
+      "bertscore_precision": 88.85,
+      "bertscore_recall": 89.92,
+      "bertscore_f1": 89.36
     },
     "confusion_triads": {
       "total": 820,
@@ -115,18 +118,18 @@
   "gemma4-e4b": {
     "fitzpatrick17k": {
       "total": 1000,
-      "top1_accuracy": 5.8999999999999995,
-      "top6_accuracy": 22.1,
-      "top1_correct": 59,
-      "top6_correct": 221,
+      "top1_accuracy": 6.6000000000000005,
+      "top6_accuracy": 25.4,
+      "top1_correct": 66,
+      "top6_correct": 254,
       "fairness_by_fst": {
         "FST_1": {
           "total": 207,
-          "top1_accuracy": 5.314009661835748
+          "top1_accuracy": 6.763285024154589
         },
         "FST_2": {
           "total": 296,
-          "top1_accuracy": 8.108108108108109
+          "top1_accuracy": 8.445945945945946
         },
         "FST_3": {
           "total": 197,
@@ -134,7 +137,7 @@
         },
         "FST_4": {
           "total": 170,
-          "top1_accuracy": 7.0588235294117645
+          "top1_accuracy": 8.235294117647058
         },
         "FST_5": {
           "total": 94,
@@ -142,14 +145,17 @@
         },
         "FST_6": {
           "total": 36,
-          "top1_accuracy": 0.0
+          "top1_accuracy": 2.7777777777777777
         }
       }
     },
     "mm_skin_vqa": {
       "total": 5452,
       "exact_match": 0.0,
-      "containment_match": 0.018341892883345562
+      "containment_match": 0.018341892883345562,
+      "bertscore_precision": 87.69,
+      "bertscore_recall": 89.65,
+      "bertscore_f1": 88.64
     },
     "confusion_triads": {
       "total": 820,
@@ -230,26 +236,26 @@
   "qwen3.5-4b": {
     "fitzpatrick17k": {
       "total": 1000,
-      "top1_accuracy": 12.0,
-      "top6_accuracy": 27.700000000000003,
-      "top1_correct": 120,
-      "top6_correct": 277,
+      "top1_accuracy": 14.000000000000002,
+      "top6_accuracy": 32.0,
+      "top1_correct": 140,
+      "top6_correct": 320,
       "fairness_by_fst": {
         "FST_1": {
           "total": 207,
-          "top1_accuracy": 11.594202898550725
+          "top1_accuracy": 14.009661835748794
         },
         "FST_2": {
           "total": 296,
-          "top1_accuracy": 9.45945945945946
+          "top1_accuracy": 11.486486486486488
         },
         "FST_3": {
           "total": 197,
-          "top1_accuracy": 13.19796954314721
+          "top1_accuracy": 15.228426395939088
         },
         "FST_4": {
           "total": 170,
-          "top1_accuracy": 13.529411764705882
+          "top1_accuracy": 15.88235294117647
         },
         "FST_5": {
           "total": 94,
@@ -257,14 +263,17 @@
         },
         "FST_6": {
           "total": 36,
-          "top1_accuracy": 13.88888888888889
+          "top1_accuracy": 16.666666666666664
         }
       }
     },
     "mm_skin_vqa": {
       "total": 5452,
       "exact_match": 0.16507703595011006,
-      "containment_match": 0.20176082171680115
+      "containment_match": 0.20176082171680115,
+      "bertscore_precision": 87.16,
+      "bertscore_recall": 89.71,
+      "bertscore_f1": 88.39
     },
     "confusion_triads": {
       "total": 820,
@@ -344,26 +353,26 @@
   "qwen3.5-9b": {
     "fitzpatrick17k": {
       "total": 1000,
-      "top1_accuracy": 17.299999999999997,
-      "top6_accuracy": 35.0,
-      "top1_correct": 173,
-      "top6_correct": 350,
+      "top1_accuracy": 18.7,
+      "top6_accuracy": 39.4,
+      "top1_correct": 187,
+      "top6_correct": 394,
       "fairness_by_fst": {
         "FST_1": {
           "total": 207,
-          "top1_accuracy": 15.942028985507244
+          "top1_accuracy": 17.874396135265698
         },
         "FST_2": {
           "total": 296,
-          "top1_accuracy": 15.878378378378377
+          "top1_accuracy": 17.56756756756757
         },
         "FST_3": {
           "total": 197,
-          "top1_accuracy": 17.766497461928935
+          "top1_accuracy": 19.289340101522843
         },
         "FST_4": {
           "total": 170,
-          "top1_accuracy": 20.0
+          "top1_accuracy": 21.176470588235293
         },
         "FST_5": {
           "total": 94,
@@ -378,7 +387,10 @@
     "mm_skin_vqa": {
       "total": 5452,
       "exact_match": 0.055025678650036686,
-      "containment_match": 0.055025678650036686
+      "containment_match": 0.055025678650036686,
+      "bertscore_precision": 87.17,
+      "bertscore_recall": 89.65,
+      "bertscore_f1": 88.36
     },
     "confusion_triads": {
       "total": 820,
