@@ -1,0 +1,72 @@
+{
+  "medgemma-4b": {
+    "n": 999,
+    "top1_judge": 22.22,
+    "top6_judge": 34.53,
+    "top1_baseline": 19.7,
+    "top6_baseline": 31.1,
+    "safety_critical_rate": 16.52,
+    "counts": {
+      "c": 171,
+      "s": 51,
+      "sc": 165,
+      "w": 612
+    }
+  },
+  "qwen3.5-9b": {
+    "n": 999,
+    "top1_judge": 19.12,
+    "top6_judge": 39.14,
+    "top1_baseline": 17.3,
+    "top6_baseline": 35.0,
+    "safety_critical_rate": 23.52,
+    "counts": {
+      "c": 146,
+      "s": 45,
+      "sc": 235,
+      "w": 573
+    }
+  },
+  "grok-4-20-reasoning": {
+    "n": 997,
+    "top1_judge": 17.05,
+    "top6_judge": 39.92,
+    "top1_baseline": 9.6,
+    "top6_baseline": 22.9,
+    "safety_critical_rate": 21.97,
+    "counts": {
+      "c": 116,
+      "s": 54,
+      "sc": 219,
+      "w": 608
+    }
+  },
+  "qwen3.5-4b": {
+    "n": 999,
+    "top1_judge": 14.61,
+    "top6_judge": 31.23,
+    "top1_baseline": 12.0,
+    "top6_baseline": 27.7,
+    "safety_critical_rate": 18.02,
+    "counts": {
+      "c": 106,
+      "s": 40,
+      "sc": 180,
+      "w": 673
+    }
+  },
+  "gemma4-e4b": {
+    "n": 997,
+    "top1_judge": 7.32,
+    "top6_judge": 24.47,
+    "top1_baseline": 5.9,
+    "top6_baseline": 22.1,
+    "safety_critical_rate": 13.74,
+    "counts": {
+      "c": 60,
+      "s": 13,
+      "sc": 137,
+      "w": 787
+    }
+  }
+}

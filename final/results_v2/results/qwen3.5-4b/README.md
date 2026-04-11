@@ -1,9 +1,9 @@
 # Qwen 3.5 4B — Zero-Shot Baseline Results (v2)
 
 - **Model:** `Qwen/Qwen3.5-4B` (4B parameters)
-- **Type:** General-purpose natively multimodal VLM (early fusion)
+- **Type:** General-purpose VLM (early-fusion, natively multimodal)
 - **Evaluation:** Zero-shot (no fine-tuning), vLLM guided JSON structured output
-- **Infrastructure:** NVIDIA L40S (48GB), vLLM 0.19.0, bfloat16, batch size 32
+- **Infrastructure:** NVIDIA L40S (48GB), vLLM 0.19.0, bfloat16, batch size 16
 - **Date:** 2026-04-09
 
 ---
@@ -26,8 +26,6 @@
 | V | 94 | 14.9% |
 | VI | 36 | 13.9% |
 
-**Most equitable model across skin tones** — only 5.4% spread between best and worst FST (vs 25% for Gemma 4). Slightly better on darker skin (FST V-VI) than lighter skin.
-
 ### Comparison with published baselines
 
 | Model | Parameters | Top-1 | Top-6 | Source |
@@ -36,28 +34,6 @@
 | GPT-5.2 | Commercial | 18.24% | 42.59% | Liu et al., 2026 |
 | Qwen3-VL-235B | 235B | 17.13% | — | Liu et al., 2026 |
 | **Qwen 3.5 4B (zero-shot)** | **4B** | **12.0%** | **27.7%** | **This work** |
-
----
-
-## Fitzpatrick17k — LLM-as-Judge Scoring (SkinFlow-style)
-
-Re-scored all 1,000 predictions with Claude Sonnet 4.5 as a clinical judge using a 4-category rubric: `correct`, `subclass`, `safety-critical`, `wrong`.
-
-| Metric | Substring | LLM Judge | Δ |
-|--------|:---------:|:---------:|:-:|
-| **Top-1 accuracy** | 12.00% | **14.61%** | **+2.61%** |
-| **Top-6 accuracy** | 27.70% | **31.23%** | **+3.53%** |
-
-### Verdict breakdown (999 entries)
-
-| Category | Count | % |
-|----------|:----:|:---:|
-| **Correct** (exact or synonym) | 106 | 10.61% |
-| **Subclass** (valid clinical subtype) | 40 | 4.00% |
-| **Safety-critical wrong** | 180 | 18.02% |
-| **Wrong** (unrelated) | 673 | 67.37% |
-
-**Qwen 3.5 4B ranks #4 under the LLM judge.** Its general-purpose pretraining gives it solid but unspecialized dermatology knowledge. The 18.02% safety-critical error rate is moderate — higher than Gemma 4 (13.7%) and MedGemma (16.5%) but lower than Qwen 9B (23.5%) and Grok (22.0%).
 
 ---
 
@@ -77,13 +53,6 @@ Re-scored all 1,000 predictions with Claude Sonnet 4.5 as a clinical judge using
 | Seborrheic Dermatitis | 39 | 70 | **56%** | Inflammatory triad |
 | Eczema | 49 | 150 | **33%** | Inflammatory triad |
 | Melanoma | 23 | 150 | **15%** | Lesion triad |
-
-### Key findings
-
-1. **Seborrheic keratosis at 90%** — strong benign lesion recognition.
-2. **BCC at 69%** — good malignant lesion detection for a 4B model.
-3. **Melanoma at 15%** — misclassified primarily as seborrheic keratosis (104/150). Critical fine-tuning target.
-4. **Eczema drops to 33%** under structured output — the model struggles to differentiate eczema from psoriasis and seb keratosis when forced to commit to a single diagnosis.
 
 ---
 

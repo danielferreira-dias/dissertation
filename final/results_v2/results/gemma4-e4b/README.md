@@ -3,7 +3,7 @@
 - **Model:** `google/gemma-4-E4B-it` (~4B parameters)
 - **Type:** General-purpose VLM (no medical pre-training)
 - **Evaluation:** Zero-shot (no fine-tuning), vLLM guided JSON structured output
-- **Infrastructure:** NVIDIA L40S (48GB), vLLM 0.19.0, bfloat16, batch size 32
+- **Infrastructure:** NVIDIA L40S (48GB), vLLM 0.19.0, bfloat16, batch size 16
 - **Date:** 2026-04-09
 
 ---
@@ -26,37 +26,14 @@
 | V | 94 | 0.0% |
 | VI | 36 | 0.0% |
 
-**Critical fairness gap:** 0% accuracy on FST V-VI (dark skin). The model completely fails on darker skin tones.
-
 ### Comparison with published baselines
 
 | Model | Parameters | Top-1 | Top-6 | Source |
 |-------|-----------|-------|-------|--------|
 | SkinFlow (fine-tuned) | 7B | 29.19% | 71.16% | Liu et al., 2026 |
 | GPT-5.2 | Commercial | 18.24% | 42.59% | Liu et al., 2026 |
-| **Gemma 4 E4B (zero-shot)** | **~4B** | **5.9%** | **22.1%** | **This work** |
-
----
-
-## Fitzpatrick17k — LLM-as-Judge Scoring (SkinFlow-style)
-
-Re-scored all 1,000 predictions with Claude Sonnet 4.5 as a clinical judge using a 4-category rubric: `correct`, `subclass`, `safety-critical`, `wrong`.
-
-| Metric | Substring | LLM Judge | Δ |
-|--------|:---------:|:---------:|:-:|
-| **Top-1 accuracy** | 5.90% | **7.32%** | **+1.42%** |
-| **Top-6 accuracy** | 22.10% | **24.47%** | **+2.37%** |
-
-### Verdict breakdown (997 entries)
-
-| Category | Count | % |
-|----------|:----:|:---:|
-| **Correct** (exact or synonym) | 60 | 6.02% |
-| **Subclass** (valid clinical subtype) | 13 | 1.30% |
-| **Safety-critical wrong** | 137 | 13.74% |
-| **Wrong** (unrelated) | 787 | 78.94% |
-
-**Gemma 4 E4B ranks #5 under the LLM judge** — last of the five models evaluated. It does have the **lowest safety-critical error rate** (13.74%), but that's because most of its errors are clinically unrelated (`w`) rather than dangerously close to the ground truth.
+| Qwen3-VL-235B | 235B | 17.13% | — | Liu et al., 2026 |
+| **Gemma 4 E4B IT (zero-shot)** | **~4B** | **5.9%** | **22.1%** | **This work** |
 
 ---
 
@@ -71,17 +48,11 @@ Re-scored all 1,000 predictions with Claude Sonnet 4.5 as a clinical judge using
 | Class | Correct | Total | Accuracy | Confusion Zone |
 |-------|---------|-------|----------|---------------|
 | Seborrheic Keratosis | 114 | 150 | **76%** | Lesion triad |
-| Eczema | 111 | 150 | **74%** | Inflammatory triad |
 | Seborrheic Dermatitis | 52 | 70 | **74%** | Inflammatory triad |
+| Eczema | 111 | 150 | **74%** | Inflammatory triad |
 | Basal Cell Carcinoma | 36 | 150 | **24%** | Lesion triad |
 | Melanoma | 36 | 150 | **24%** | Lesion triad |
 | Psoriasis | 23 | 150 | **15%** | Inflammatory triad |
-
-### Key findings
-
-1. **Eczema and seb dermatitis are strong (74%)** — better than MedGemma on these conditions.
-2. **Psoriasis at 15%** reveals a critical blind spot without medical training.
-3. **BCC and melanoma both at 24%** — cannot distinguish malignant lesions.
 
 ---
 

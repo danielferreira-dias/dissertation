@@ -1,0 +1,200 @@
+{"i": 700, "gt": "scabies", "d": "Most Likely Condition", "t6": [". Most Likely Condition", ". 2nd Most Likely Condition", ". 3rd Most Likely Condition", ". 4th Most Likely Condition", ". 5th Most Likely Condition", ". 6th Most Likely Condition"]}
+{"i": 701, "gt": "basal cell carcinoma", "d": "basal cell carcinoma", "t6": [". Basal Cell Carcinoma", ". Squamous Cell Carcinoma", ". Melanoma", ". Actinic Keratosis", ". Seborrheic Keratosis", ". Dermatofibroma"]}
+{"i": 702, "gt": "neutrophilic dermatoses", "d": "venous stasis ulcer", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 703, "gt": "epidermal nevus", "d": "atopic dermatitis (eczema)", "t6": [". eczema", ". psoriasis", ". contact dermatitis", ". seborrheic dermatitis", ". fungal infection", ". urticaria"]}
+{"i": 704, "gt": "malignant melanoma", "d": "spider angiomas", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 705, "gt": "milia", "d": "Sebaceous hyperplasia", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 706, "gt": "hailey hailey disease", "d": "psoriasis", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 707, "gt": "perioral dermatitis", "d": "Rosacea", "t6": [". Rosacea", ". Seborrheic dermatitis", ". Acne vulgaris", ". Lupus erythematosus", ". Contact dermatitis", ". Psoriasis"]}
+{"i": 708, "gt": "perioral dermatitis", "d": "Rosacea", "t6": ["Rosacea", "Seborrheic dermatitis", "Acne vulgaris", "Contact dermatitis", "Psoriasis", "Folliculitis"]}
+{"i": 709, "gt": "squamous cell carcinoma", "d": "Herpes Simplex Virus (HSV) infection", "t6": [". Herpetic Whitlow", ". Herpes Labialis", ". Oral Herpes", ". Cold Sore", ". Fever Blister", ". Impetigo"]}
+{"i": 710, "gt": "superficial spreading melanoma ssm", "d": "melanoma", "t6": ["basal cell carcinoma", "squamous cell carcinoma", "seborrheic keratosis", "nevus", "actinic keratosis", "dermatofibroma"]}
+{"i": 711, "gt": "tick bite", "d": "scabies", "t6": ["scabies", "insect bites", "folliculitis", "eczema", "psoriasis", "allergic reaction"]}
+{"i": 712, "gt": "keloid", "d": "burn", "t6": ["second-degree burn", "third-degree burn", "fourth-degree burn", "thermal burn", "chemical burn", "electrical burn"]}
+{"i": 713, "gt": "lyme disease", "d": "Nevus spilus", "t6": [". Nevus spilus", ". Cafe-au-lait macule", ". Becker's nevus", ". Congenital melanocytic nevus", ". Melanoma", ". Seborrheic keratosis"]}
+{"i": 714, "gt": "photodermatoses", "d": "Rosacea", "t6": [". Rosacea", ". Seborrheic dermatitis", ". Eczema", ". Psoriasis", ". Acne vulgaris", ". Allergic reaction"]}
+{"i": 715, "gt": "psoriasis", "d": "Pityriasis rosea", "t6": ["Pityriasis rosea", "Guttate psoriasis", "Secondary syphilis", "Drug eruption", "Tinea corporis", "Eczema"]}
+{"i": 716, "gt": "keloid", "d": "acne vulgaris", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 717, "gt": "lentigo maligna", "d": "melanoma", "t6": ["melanoma", "basal cell carcinoma", "seborrheic keratosis", "nevus (mole)", "lentigo", "actinic keratosis"]}
+{"i": 718, "gt": "drug induced pigmentary changes", "d": "Pityriasis versicolor", "t6": [". Pityriasis versicolor", ". Tinea versicolor", ". Seborrheic dermatitis", ". Erythrasma", ". Cutaneous T-cell lymphoma (CTCL)", ". Post-inflammatory hypopigmentation"]}
+{"i": 719, "gt": "actinic keratosis", "d": "Basal Cell Carcinoma", "t6": [". Basal Cell Carcinoma", ". Squamous Cell Carcinoma", ". Actinic Keratosis", ". Melanoma", ". Seborrheic Keratosis", ". Dermatofibroma"]}
+{"i": 720, "gt": "neutrophilic dermatoses", "d": "psoriasis", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 721, "gt": "neurofibromatosis", "d": "Neurofibromatosis type 1 (NF1)", "t6": [". Neurofibromatosis type 1 (NF1)", ". Neurofibromatosis type 2 (NF2)", ". Tuberous Sclerosis Complex", ". Sturge-Weber Syndrome", ". Klippel-Trenaunay Syndrome", ". Multiple Lipomas"]}
+{"i": 722, "gt": "melanoma", "d": "melanoma", "t6": [".nevus", ".seborrheic keratosis", ".basal cell carcinoma", ".squamous cell carcinoma", ".dermatofibroma", ".benign melanocytic nevus"]}
+{"i": 723, "gt": "vitiligo", "d": "Vitiligo", "t6": [". Vitiligo", ". Acanthosis Nigricans", ". Tinea Versicolor", ". Psoriasis", ". Lichen Planus", ". Eczema"]}
+{"i": 724, "gt": "melanoma", "d": "Basal Cell Carcinoma", "t6": [". Basal Cell Carcinoma", ". Squamous Cell Carcinoma", ". Melanoma", ". Actinic Keratosis", ". Seborrheic Keratosis", ". Dermatofibroma"]}
+{"i": 725, "gt": "squamous cell carcinoma", "d": "Most Likely Condition", "t6": [".jpg", "erythema multiforme", "bullous pemphigoid", "pemphigus vulgaris", "dermatitis herpetiformis", "contact dermatitis"]}
+{"i": 726, "gt": "squamous cell carcinoma", "d": "balanitis", "t6": [". Balanitis", ". Erythrasma", ". Candida infection", ". Herpes simplex virus (HSV)", ". Psoriasis", ". Lichen sclerosus"]}
+{"i": 727, "gt": "lichen planus", "d": "", "t6": []}
+{"i": 728, "gt": "urticaria pigmentosa", "d": "Folliculitis", "t6": ["Folliculitis", "Insect bites", "Keratosis pilaris", "Eczema", "Pityriasis rosea", "Scabies"]}
+{"i": 729, "gt": "stevens johnson syndrome", "d": "aphthous ulcer", "t6": [". Aphthous ulcer", ". Herpes simplex virus (HSV)", ". Hand, foot, and mouth disease", ". Oral lichen planus", ". Behcet's disease", ". Crohn's disease"]}
+{"i": 730, "gt": "scabies", "d": "Basal Cell Carcinoma", "t6": [". Basal Cell Carcinoma", ". Squamous Cell Carcinoma", ". Melanoma", ". Actinic Keratosis", ". Seborrheic Keratosis", ". Dermatofibroma"]}
+{"i": 731, "gt": "perioral dermatitis", "d": "Rosacea", "t6": [". Rosacea", ". Seborrheic dermatitis", ". Lupus erythematosus", ". Acne vulgaris", ". Contact dermatitis", ". Psoriasis"]}
+{"i": 732, "gt": "acquired autoimmune bullous diseaseherpes gestationis", "d": "acne vulgaris", "t6": ["acne vulgaris", "folliculitis", "psoriasis", "eczema", "fungal infection", "contact dermatitis"]}
+{"i": 733, "gt": "squamous cell carcinoma", "d": "Basal Cell Carcinoma", "t6": [". Basal Cell Carcinoma", ". Squamous Cell Carcinoma", ". Melanoma", ". Actinic Keratosis", ". Sebaceous Gland Carcinoma", ". Merkel Cell Carcinoma"]}
+{"i": 734, "gt": "porokeratosis actinic", "d": "Lichen planus", "t6": [". Lichen planus", ". Lichen planus", ". Lichen planus", ". Lichen planus", ". Lichen planus", ". Lichen planus"]}
+{"i": 735, "gt": "granuloma annulare", "d": "Lichen planus", "t6": [". Lichen planus", ". Psoriasis", ". Eczema/Dermatitis", ". Fungal infection (Tinea pedis)", ". Contact dermatitis", ". Cellulitis"]}
+{"i": 736, "gt": "aplasia cutis", "d": "Nevus flammeus (Port-wine stain)", "t6": [". Nevus flammeus (Port-wine stain)", ". Infantile hemangioma", ". Seborrheic dermatitis", ". Atopic dermatitis", ". Eczema", ". Pityriasis rosea"]}
+{"i": 737, "gt": "sun damaged skin", "d": "cellulitis", "t6": ["cellulitis", "erysipelas", "venous stasis dermatitis", "lymphedema", "contact dermatitis", "insect bite reaction"]}
+{"i": 738, "gt": "melanoma", "d": "pyogenic granuloma", "t6": [".pyogenic granuloma", ".squamous cell carcinoma", ".melanoma", ".wart", ".fungal infection", ".blister"]}
+{"i": 739, "gt": "psoriasis", "d": "psoriasis", "t6": ["psoriasis", "eczema", "lichen planus", "scabies", "contact dermatitis", "fungal infection"]}
+{"i": 740, "gt": "basal cell carcinoma", "d": "Basal Cell Carcinoma", "t6": [". Basal Cell Carcinoma", ". Squamous Cell Carcinoma", ". Melanoma", ". Actinic Keratosis", ". Sebaceous Hyperplasia", ". Dermatofibroma"]}
+{"i": 741, "gt": "sarcoidosis", "d": "psoriasis", "t6": [".psoriasis", ".eczema", ".atopic dermatitis", ".scabies", ".contact dermatitis", ".lichen planus"]}
+{"i": 742, "gt": "pilar cyst", "d": "infantile hemangioma", "t6": [". Infantile Hemangioma", ". Pyogenic Granuloma", ". Spitz Nevus", ". Kaposi Sarcoma", ". Melanoma", ". Basal Cell Carcinoma"]}
+{"i": 743, "gt": "stasis edema", "d": "Stasis dermatitis", "t6": [". Stasis dermatitis", ". Cellulitis", ". Venous insufficiency", ". Edema", ". Skin discoloration", ". Hyperpigmentation"]}
+{"i": 744, "gt": "pustular psoriasis", "d": "Eczema (Atopic Dermatitis)", "t6": [". Eczema (Atopic Dermatitis)", ". Contact Dermatitis", ". Psoriasis", ". Fungal Infection", ". Scabies", ". Hives (Urticaria)"]}
+{"i": 745, "gt": "folliculitis", "d": "Folliculitis", "t6": ["Folliculitis", "Acne vulgaris", "Keratosis pilaris", "Contact dermatitis", "Psoriasis", "Eczema"]}
+{"i": 746, "gt": "hidradenitis", "d": "vulvar lichen sclerosus", "t6": [".vulvar lichen sclerosus", ".vulvar intraepithelial neoplasia (vin)", ".vulvar candidiasis", ".vulvar eczema", ".vulvar psoriasis", ".vulvar abscess"]}
+{"i": 747, "gt": "granuloma pyogenic", "d": "acne vulgaris", "t6": ["acne vulgaris", "folliculitis", "rosacea", "contact dermatitis", "seborrheic dermatitis", "pityrosporum ovale folliculitis"]}
+{"i": 748, "gt": "nematode infection", "d": "skin infection", "t6": ["impetigo", "cellulitis", "folliculitis", "abscess", "pimple", "cyst"]}
+{"i": 749, "gt": "dariers disease", "d": "Most likely condition is severe acne vulgaris.", "t6": [". Severe Acne Vulgaris", ". Rosacea", ". Seborrheic Dermatitis", ". Psoriasis", ". Eczema", ". Lupus Erythematosus"]}
+{"i": 750, "gt": "naevus comedonicus", "d": "melanoma", "t6": ["melanoma", "seborrheic keratosis", "lentigo maligna melanoma", "pigmented basal cell carcinoma", "nevus", "basal cell carcinoma"]}
+{"i": 751, "gt": "dyshidrotic eczema", "d": "Most Likely Condition", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 752, "gt": "psoriasis", "d": "drug eruption", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 753, "gt": "nematode infection", "d": "wart", "t6": ["wart", "callus", "corn", "skin tag", "molluscum contagiosum", "fibroma"]}
+{"i": 754, "gt": "sarcoidosis", "d": "psoriasis", "t6": ["psoriasis", "eczema", "fungal infection", "contact dermatitis", "lichen planus", "vitiligo"]}
+{"i": 755, "gt": "sarcoidosis", "d": "Conjunctivitis (Pink Eye)", "t6": [".01 Conjunctivitis", ".02 Dry eye", ".03 Blepharitis", ".04 Chalazion", ".05 Stye", ".06 Eyelid cyst"]}
+{"i": 756, "gt": "lichen planus", "d": "Herpetic whitlow", "t6": [". Herpetic whitlow", ". Hand, foot, and mouth disease", ". Impetigo", ". Cellulitis", ". Paronychia", ". Eczema"]}
+{"i": 757, "gt": "urticaria", "d": "scabies", "t6": ["scabies", "atopic dermatitis", "allergic reaction", "insect bites", "folliculitis", "viral exanthem"]}
+{"i": 758, "gt": "livedo reticularis", "d": "Livedo reticularis", "t6": [". Livedo reticularis", ". Erythema ab igne", ". Cutis marmorata", ". Vasculitis", ". Scleroderma", ". Psoriasis"]}
+{"i": 759, "gt": "drug eruption", "d": "Most Likely Condition", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 760, "gt": "acne vulgaris", "d": "acne vulgaris", "t6": ["acne vulgaris", "folliculitis", "rosacea", "cystic acne", "pimple", "skin infection"]}
+{"i": 761, "gt": "mycosis fungoides", "d": "lichen planus", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 762, "gt": "lupus erythematosus", "d": "Basal Cell Carcinoma", "t6": [". Basal Cell Carcinoma", ". Squamous Cell Carcinoma", ". Actinic Keratosis", ". Melanoma", ". Sebaceous Hyperplasia", ". Rosacea"]}
+{"i": 763, "gt": "squamous cell carcinoma", "d": "venous stasis ulcer", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 764, "gt": "vitiligo", "d": "alopecia areata", "t6": ["alopecia areata", "male pattern baldness", "traction alopecia", "telogen effluvium", "scarring alopecia", "fungal infection"]}
+{"i": 765, "gt": "neutrophilic dermatoses", "d": "Pityriasis rosea", "t6": [". Pityriasis Rosea", ". Secondary Syphilis", ". Drug Eruption", ". Tinea Versicolor", ". Guttate Psoriasis", ". Erythema Multiforme"]}
+{"i": 766, "gt": "erythema multiforme", "d": "Urticaria (hives)", "t6": [". Urticaria (hives)", ". Drug eruption", ". Viral exanthem", ". Insect bite reaction", ". Contact dermatitis", ". Eczema"]}
+{"i": 767, "gt": "aplasia cutis", "d": "cystic acne", "t6": ["cystic acne", "nodular acne", "folliculitis", "acne vulgaris", "sebaceous cyst", "pimple"]}
+{"i": 768, "gt": "actinic keratosis", "d": "Actinic Keratosis", "t6": [". Basal Cell Carcinoma", ". Squamous Cell Carcinoma", ". Seborrheic Keratosis", ". Melanoma", ". Actinic Dermatitis", ". Rosacea"]}
+{"i": 769, "gt": "scabies", "d": "Lichen simplex chronicus", "t6": [". Lichen simplex chronicus", ". Atopic dermatitis", ". Psoriasis", ". Eczema", ". Contact dermatitis", ". Fungal infection"]}
+{"i": 770, "gt": "acne vulgaris", "d": "acne vulgaris", "t6": ["acne vulgaris", "folliculitis", "rosacea", "seborrheic dermatitis", "keratosis pilaris", "contact dermatitis"]}
+{"i": 771, "gt": "port wine stain", "d": "Rosacea", "t6": [". Rosacea", ". Seborrheic dermatitis", ". Lupus erythematosus", ". Contact dermatitis", ". Acne vulgaris", ". Psoriasis"]}
+{"i": 772, "gt": "acrodermatitis enteropathica", "d": "Severe Eczema (Atopic Dermatitis)", "t6": [". Severe Eczema (Atopic Dermatitis)", ". Psoriasis", ". Scabies", ". Impetigo", ". Contact Dermatitis", ". Fungal Infection"]}
+{"i": 773, "gt": "porokeratosis actinic", "d": "Lichen planus", "t6": [". Lichen planus", ". Psoriasis", ". Eczema", ". Fungal infection", ". Scabies", ". Drug eruption"]}
+{"i": 774, "gt": "necrobiosis lipoidica", "d": "Infected wound/ulcer", "t6": ["Infected wound/ulcer", "Cellulitis", "Necrotizing fasciitis", "Pyoderma gangrenosum", "Ecthyma", "Abscess"]}
+{"i": 775, "gt": "porokeratosis actinic", "d": "basal cell carcinoma", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 776, "gt": "paronychia", "d": "paronychia", "t6": ["paronychia", "nail fungus (onychomycosis)", "psoriasis", "eczema", "lichen planus", "contact dermatitis"]}
+{"i": 777, "gt": "dariers disease", "d": "psoriasis", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 778, "gt": "squamous cell carcinoma", "d": "Basal Cell Carcinoma", "t6": [". Basal Cell Carcinoma", ". Squamous Cell Carcinoma", ". Melanoma", ". Actinic Keratosis", ". Sebaceous Gland Carcinoma", ". Dermatofibroma"]}
+{"i": 779, "gt": "actinic keratosis", "d": "Actinic Keratosis", "t6": [". Basal Cell Carcinoma", ". Squamous Cell Carcinoma", ". Seborrheic Keratosis", ". Melanoma", ". Bowen's Disease", ". Dermatofibroma"]}
+{"i": 780, "gt": "striae", "d": "Oral lichen planus", "t6": [". Oral lichen planus", ". Lichenoid drug eruption", ". Leukoplakia", ". Oral candidiasis", ". Necrotizing ulcerative gingivitis (NUG)", ". Acute necrotizing ulcerative gingivitis (ANUG)"]}
+{"i": 781, "gt": "basal cell carcinoma", "d": "Basal Cell Carcinoma", "t6": [". Basal Cell Carcinoma", ". Squamous Cell Carcinoma", ". Melanoma", ". Actinic Keratosis", ". Sebaceous Hyperplasia", ". Rosacea"]}
+{"i": 782, "gt": "lupus erythematosus", "d": "basal cell carcinoma", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 783, "gt": "lupus erythematosus", "d": "basal cell carcinoma", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 784, "gt": "calcinosis cutis", "d": "venous stasis ulcer", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 785, "gt": "scleromyxedema", "d": "Contact dermatitis", "t6": [". Contact dermatitis", ". Irritant contact dermatitis", ". Allergic contact dermatitis", ". Atopic dermatitis", ". Eczema", ". Seborrheic dermatitis"]}
+{"i": 786, "gt": "pityriasis rubra pilaris", "d": "psoriasis", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 787, "gt": "psoriasis", "d": "Seborrheic dermatitis", "t6": [". Seborrheic Dermatitis", ". Eczema", ". Psoriasis", ". Contact Dermatitis", ". Fungal Infection (e.g., Tinea)", ". Actinic Keratosis"]}
+{"i": 788, "gt": "lyme disease", "d": "Most Likely Condition", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 789, "gt": "ichthyosis vulgaris", "d": "Ichthyosis vulgaris", "t6": [". Ichthyosis vulgaris", ". X-linked ichthyosis", ". Atopic dermatitis", ". Psoriasis", ". Eczema", ". Keratosis pilaris"]}
+{"i": 790, "gt": "lichen planus", "d": "Eczema (Dermatitis)", "t6": [". Eczema (Dermatitis)", ". Contact Dermatitis", ". Psoriasis", ". Scabies", ". Fungal Infection", ". Lichen Planus"]}
+{"i": 791, "gt": "tuberous sclerosis", "d": "vitiligo", "t6": [".hypopigmented patches", "post-inflammatory hypopigmentation", "tinea versicolor", "pityriasis alba", "lichen sclerosus", "alopecia areata"]}
+{"i": 792, "gt": "rosacea", "d": "Rosacea", "t6": ["Rosacea", "Acne Vulgaris", "Seborrheic Dermatitis", "Folliculitis", "Keratosis Pilaris", "Contact Dermatitis"]}
+{"i": 793, "gt": "photodermatoses", "d": "Cafe-au-lait macule", "t6": ["Cafe-au-lait macule", "Congenital melanocytic nevus", "Nevus spilus", "Becker's nevus", "Postinflammatory hyperpigmentation", "Lentigo simplex"]}
+{"i": 794, "gt": "acne vulgaris", "d": "acne vulgaris", "t6": [". acne vulgaris", ". rosacea", ". folliculitis", ". keratosis pilaris", ". allergic reaction", ". eczema"]}
+{"i": 795, "gt": "necrobiosis lipoidica", "d": "Necrobiosis Lipoidica Diabeticorum (NLD)", "t6": [". Necrobiosis Lipoidica Diabeticorum (NLD)", ". Vasculitis", ". Pyoderma Gangrenosum", ". Stasis Dermatitis", ". Eczema", ". Infection"]}
+{"i": 796, "gt": "lupus erythematosus", "d": "Pityriasis rosea", "t6": [". Pityriasis rosea", ". Secondary syphilis", ". Drug eruption", ". Tinea corporis", ". Eczema", ". Varicella zoster virus (shingles)"]}
+{"i": 797, "gt": "livedo reticularis", "d": "varicose veins", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 798, "gt": "neurofibromatosis", "d": "acanthosis nigricans", "t6": [". acanthosis nigricans", ". lichen planus", ". seborrheic dermatitis", ". eczema", ". psoriasis", ". tinea versicolor"]}
+{"i": 799, "gt": "cheilitis", "d": "Herpes Simplex Virus (HSV)", "t6": [". Herpes Simplex Virus (HSV)", ". Impetigo", ". Contact Dermatitis", ". Oral Thrush", ". Angular Cheilitis", ". Perioral Dermatitis"]}
+{"i": 800, "gt": "folliculitis", "d": "erythema nodosum", "t6": [". Erythema Nodosum", ". Vasculitis", ". Cellulitis", ". Insect Bites", ". Psoriasis", ". Eczema"]}
+{"i": 801, "gt": "fixed eruptions", "d": "Furunculosis (Boil)", "t6": [". Furunculosis (Boil)", ". Hidradenitis Suppurativa", ". Folliculitis", ". Cellulitis", ". Abscess", ". Erysipelas"]}
+{"i": 802, "gt": "langerhans cell histiocytosis", "d": "Drug eruption (e.g., morbilliform or urticarial)", "t6": [". Drug eruption (e.g., morbilliform or urticarial)", ". Urticaria (hives)", ". Viral exanthem", ". Insect bites", ". Pityriasis rosea", ". Scabies"]}
+{"i": 803, "gt": "scabies", "d": "acne vulgaris", "t6": ["acne vulgaris", "folliculitis", "drug eruption", "insect bites", "pityriasis rosea", "keratosis pilaris"]}
+{"i": 804, "gt": "granuloma annulare", "d": "Lichen planus", "t6": ["Lichen planus", "Psoriasis", "Eczema (Dermatitis)", "Fungal infection", "Contact dermatitis", "Scabies"]}
+{"i": 805, "gt": "nevocytic nevus", "d": "Basal Cell Carcinoma", "t6": [". Basal Cell Carcinoma", ". Squamous Cell Carcinoma", ". Melanoma", ". Actinic Keratosis", ". Sebaceous Hyperplasia", ". Dermatofibroma"]}
+{"i": 806, "gt": "actinic keratosis", "d": "basal cell carcinoma", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 807, "gt": "lichen planus", "d": "erythema multiforme", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 808, "gt": "lymphangioma", "d": "Herpes Zoster (Shingles)", "t6": [". Herpes Zoster (Shingles)", ". Herpes Simplex Virus (HSV) infection", ". Contact Dermatitis", ". Impetigo", ". Psoriasis", ". Eczema"]}
+{"i": 809, "gt": "mucous cyst", "d": "mucosa cyst", "t6": [".mucocele", ".cyst", ".lipoma", ".fibroma", ".apocrine hidrocystoma", ".salivary gland tumor"]}
+{"i": 810, "gt": "sarcoidosis", "d": "Lymphedema", "t6": ["Lymphedema", "Chronic Venous Insufficiency", "Cellulitis", "Stasis Dermatitis", "Psoriasis", "Eczema"]}
+{"i": 811, "gt": "actinic keratosis", "d": "Seborrheic Keratosis", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 812, "gt": "lupus erythematosus", "d": "Rosacea", "t6": [".01 Rosacea", ".02 Acne Vulgaris", ".03 Lupus Erythematosus", ".04 Seborrheic Dermatitis", ".05 Contact Dermatitis", ".06 Psoriasis"]}
+{"i": 813, "gt": "eczema", "d": "Most Likely Condition", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 814, "gt": "granuloma annulare", "d": "acanthosis nigricans", "t6": ["acanthosis nigricans", "lichen simplex chronicus", "post-inflammatory hyperpigmentation", "atopic dermatitis", "seborrheic dermatitis", "contact dermatitis"]}
+{"i": 815, "gt": "becker nevus", "d": "basal cell carcinoma", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 816, "gt": "pityriasis rubra pilaris", "d": "Pityriasis rubra pilaris (PRP)", "t6": [". Pityriasis rubra pilaris (PRP)", ". Psoriasis", ". Seborrheic dermatitis", ". Eczema/Dermatitis", ". Lichen planus", ". Tinea corporis"]}
+{"i": 817, "gt": "nevus sebaceous of jadassohn", "d": "alopecia areata", "t6": [". alopecia areata", ". tinea capitis", ". seborrheic dermatitis", ". psoriasis", ". eczema", ". ringworm"]}
+{"i": 818, "gt": "neurofibromatosis", "d": "Neurofibromatosis type 1 (NF1)", "t6": [". Neurofibromatosis type 1 (NF1)", ". Neurofibromatosis type 2 (NF2)", ". Tuberous sclerosis complex (TSC)", ". Multiple lipomas", ". Lipomatosis", ". Other rare genetic syndromes causing multiple skin nodules"]}
+{"i": 819, "gt": "lichen simplex", "d": "Molluscum contagiosum", "t6": [". Moles", ". Warts", ". Chickenpox", ". Insect bites", ". Folliculitis", ". Acne"]}
+{"i": 820, "gt": "allergic contact dermatitis", "d": "Erythema toxicum neonatorum", "t6": [". Erythema toxicum neonatorum", ". Milia", ". Seborrheic dermatitis", ". Atopic dermatitis", ". Contact dermatitis", ". Varicella (chickenpox)"]}
+{"i": 821, "gt": "scleromyxedema", "d": "Keratosis pilaris", "t6": ["Keratosis pilaris", "Folliculitis", "Eczema", "Acne", "Pityriasis rosea", "Dry skin"]}
+{"i": 822, "gt": "acne vulgaris", "d": "acne vulgaris", "t6": ["acne vulgaris", "folliculitis", "cystic acne", "pityrosporum ovale folliculitis", "keratosis pilaris", "drug eruption"]}
+{"i": 823, "gt": "melanoma", "d": "melanoma", "t6": ["basal cell carcinoma", "squamous cell carcinoma", "seborrheic keratosis", "nevus (mole)", "dermatofibroma", "lentigo"]}
+{"i": 824, "gt": "hidradenitis", "d": "cellulitis", "t6": [". cellulitis", ". erysipelas", ". abscess", ". folliculitis", ". insect bite reaction", ". impetigo"]}
+{"i": 825, "gt": "ichthyosis vulgaris", "d": "Ichthyosis vulgaris", "t6": ["Ichthyosis vulgaris", "X-linked ichthyosis", "Lamellar ichthyosis", "Epidermolytic ichthyosis", "Congenital ichthyosiform erythroderma", "Harlequin ichthyosis"]}
+{"i": 826, "gt": "scleroderma", "d": "sunburn", "t6": ["sunburn", "erythema multiforme", "drug eruption", "psoriasis", "eczema", "allergic reaction"]}
+{"i": 827, "gt": "squamous cell carcinoma", "d": "wart", "t6": ["wart", "corn", "callus", "skin tag", "fibroma", "melanoma"]}
+{"i": 828, "gt": "sun damaged skin", "d": "Ichthyosis vulgaris", "t6": [". Ichthyosis vulgaris", ". X-linked ichthyosis", ". Atopic dermatitis", ". Psoriasis", ". Eczema", ". Seborrheic dermatitis"]}
+{"i": 829, "gt": "factitial dermatitis", "d": "insect bite", "t6": ["insect bite", "mosquito bite", "spider bite", "chigger bite", "bed bug bite", "flea bite"]}
+{"i": 830, "gt": "langerhans cell histiocytosis", "d": "seborrheic dermatitis", "t6": [".infantile seborrheic dermatitis", ".atopic dermatitis", ".eczema", ".contact dermatitis", ".psoriasis", ".tinea capitis"]}
+{"i": 831, "gt": "mycosis fungoides", "d": "atopic dermatitis (eczema)", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 832, "gt": "fordyce spots", "d": "Oral lichen planus", "t6": [". Oral lichen planus", ". Lichenoid keratosis", ". Leukoplakia", ". Erythema multiforme", ". Aphthous ulcer", ". Herpes simplex virus infection"]}
+{"i": 833, "gt": "telangiectases", "d": "melasma", "t6": ["melasma", "post-inflammatory hyperpigmentation", "lichen planus pigmentosus", "drug eruption", "vitiligo", "tinea versicolor"]}
+{"i": 834, "gt": "actinic keratosis", "d": "Seborrheic Keratosis", "t6": [". Seborrheic Keratosis", ". Basal Cell Carcinoma", ". Actinic Keratosis", ". Squamous Cell Carcinoma", ". Melanoma", ". Dermatofibroma"]}
+{"i": 835, "gt": "acne", "d": "acne vulgaris", "t6": ["acne vulgaris", "folliculitis", "keratosis pilaris", "psoriasis", "eczema", "allergic reaction"]}
+{"i": 836, "gt": "porokeratosis actinic", "d": "Folliculitis", "t6": [". Folliculitis", ". Acne", ". Insect bites", ". Keratosis pilaris", ". Eczema", ". Pityriasis rosea"]}
+{"i": 837, "gt": "halo nevus", "d": "vitiligo", "t6": ["vitiligo", "post-inflammatory hypopigmentation", "tinea versicolor", "melasma", "porphyria cutanea tarda", "alopecia areata"]}
+{"i": 838, "gt": "melanoma", "d": "Paronychia", "t6": [". Paronychia", ". Onychomycosis", ". Cellulitis", ". Ingrown toenail", ". Psoriasis", ". Eczema"]}
+{"i": 839, "gt": "psoriasis", "d": "psoriasis", "t6": ["psoriasis", "eczema", "fungal infection", "lichen planus", "scabies", "contact dermatitis"]}
+{"i": 840, "gt": "sarcoidosis", "d": "acne vulgaris", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 841, "gt": "porphyria", "d": "actinic keratosis", "t6": ["actinic keratosis", "basal cell carcinoma", "squamous cell carcinoma", "melanoma", "seborrheic keratosis", "lichen planus"]}
+{"i": 842, "gt": "psoriasis", "d": "Most Likely Condition", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 843, "gt": "sarcoidosis", "d": "Herpes Zoster (Shingles)", "t6": [". Herpes Zoster (Shingles)", ". Herpes Simplex Virus (HSV) infection", ". Contact Dermatitis", ". Impetigo", ". Psoriasis", ". Eczema"]}
+{"i": 844, "gt": "mucous cyst", "d": "onychomycosis", "t6": ["onychomycosis", "nail psoriasis", "lichen planus", "fungal infection", "psoriasis", "dermatophyte infection"]}
+{"i": 845, "gt": "photodermatoses", "d": "", "t6": []}
+{"i": 846, "gt": "pustular psoriasis", "d": "Neonatal acne", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 847, "gt": "naevus comedonicus", "d": "Congenital Melanocytic Nevus", "t6": [". Congenital Melanocytic Nevus", ". Cafe-au-lait macule", ". Becker's nevus", ". Nevus spilus", ". Café-au-lait spot", ". Ash leaf spot"]}
+{"i": 848, "gt": "fordyce spots", "d": "cheilitis", "t6": ["angular cheilitis", "contact dermatitis", "lichen planus", "aphthous ulcer", "herpes labialis", "actinic cheilitis"]}
+{"i": 849, "gt": "neurodermatitis", "d": "Contact dermatitis", "t6": [". Contact dermatitis", ". Irritant contact dermatitis", ". Allergic contact dermatitis", ". Atopic dermatitis", ". Eczema", ". Psoriasis"]}
+{"i": 850, "gt": "psoriasis", "d": "psoriasis", "t6": ["psoriasis", "fungal infection (onychomycosis)", "eczema", "lichen planus", "scabies", "contact dermatitis"]}
+{"i": 851, "gt": "squamous cell carcinoma", "d": "squamous cell carcinoma", "t6": [". keratoacanthoma", ". basal cell carcinoma", ". melanoma", ". seborrheic keratosis", ". squamous cell carcinoma", ". basal cell carcinoma"]}
+{"i": 852, "gt": "tuberous sclerosis", "d": "Milia", "t6": [". Moles", ". Sebaceous hyperplasia", ". Acne", ". Keratosis pilaris", ". Comedones", ". Nevus"]}
+{"i": 853, "gt": "prurigo nodularis", "d": "vasculitis", "t6": ["vasculitis", "erythema nodosum", "pyoderma gangrenosum", "insect bites", "folliculitis", "cellulitis"]}
+{"i": 854, "gt": "acne vulgaris", "d": "Severe Acne Vulgaris", "t6": [". Severe Acne Vulgaris", ". Cystic Acne", ". Nodulocystic Acne", ". Rosacea", ". Folliculitis", ". Keratosis Pilaris"]}
+{"i": 855, "gt": "psoriasis", "d": "Seborrheic dermatitis", "t6": [". Seborrheic dermatitis", ". Psoriasis", ". Eczema (Atopic Dermatitis)", ". Contact Dermatitis", ". Fungal Infection (e.g., Tinea Capitis, if it were on the scalp)", ". Lupus Erythematosus"]}
+{"i": 856, "gt": "superficial spreading melanoma ssm", "d": "melanoma", "t6": ["melanoma", "basal cell carcinoma", "squamous cell carcinoma", "seborrheic keratosis", "nevus", "dermatofibroma"]}
+{"i": 857, "gt": "nevus sebaceous of jadassohn", "d": "shingles (herpes zoster)", "t6": [". Herpes Zoster (Shingles)", ". Contact Dermatitis", ". Impetigo", ". Eczema", ". Psoriasis", ". Insect Bites"]}
+{"i": 858, "gt": "behcets disease", "d": "Genital warts (condyloma acuminata)", "t6": [". Genital warts (condyloma acuminata)", ". Condyloma lata", ". Molluscum contagiosum", ". Herpes simplex virus infection", ". Syphilis", ". Scabies"]}
+{"i": 859, "gt": "squamous cell carcinoma", "d": "vulvar intraepithelial neoplasia (VIN)", "t6": [".01", ".02", ".03", ".04", ".05", ".06"]}
+{"i": 860, "gt": "pityriasis rosea", "d": "Folliculitis", "t6": [". Folliculitis", ". Acne", ". Keratosis pilaris", ". Eczema", ". Psoriasis", ". Scabies"]}
+{"i": 861, "gt": "epidermal nevus", "d": "Seborrheic Keratosis", "t6": [". Seborrheic Keratosis", ". Nevus (Mole)", ". Lentigo", ". Dermatofibroma", ". Basal Cell Carcinoma", ". Melanoma"]}
+{"i": 862, "gt": "aplasia cutis", "d": "alopecia areata", "t6": ["alopecia areata", "traction alopecia", "fungal infection (tinea capitis)", "scarring alopecia", "telogen effluvium", "seborrheic dermatitis"]}
+{"i": 863, "gt": "lupus subacute", "d": "Oral Mucosa", "t6": ["Oral Mucosa", "Oral Candidiasis (Thrush)", "Oral Lichen Planus", "Oral Herpes Simplex Virus (Cold Sore)", "Oral Squamous Cell Carcinoma", "Oral Melanoma"]}
+{"i": 864, "gt": "lupus erythematosus", "d": "Rosacea", "t6": [". Rosacea", ". Seborrheic dermatitis", ". Acne vulgaris", ". Lupus erythematosus", ". Psoriasis", ". Eczema"]}
+{"i": 865, "gt": "scabies", "d": "Genital warts", "t6": [". Genital warts", ". Condyloma acuminata", ". Molluscum contagiosum", ". Herpes simplex virus infection", ". Lichen planus", ". Fordyce spots"]}
+{"i": 866, "gt": "melanoma", "d": "melanoma", "t6": ["nevus (mole)", "seborrheic keratosis", "lentigo", "basal cell carcinoma", "squamous cell carcinoma", "dermatofibroma"]}
+{"i": 867, "gt": "urticaria", "d": "Drug eruption (e.g., morbilliform or urticarial)", "t6": [". Drug eruption (e.g., morbilliform or urticarial)", ". Urticaria", ". Viral exanthem", ". Allergic reaction", ". Eczema", ". Pityriasis rosea"]}
+{"i": 868, "gt": "pilomatricoma", "d": "epidermoid cyst", "t6": ["epidermoid cyst", "lipoma", "sebaceous cyst", "pilar cyst", "folliculitis", "acne vulgaris"]}
+{"i": 869, "gt": "syringoma", "d": "Keratosis pilaris", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 870, "gt": "scabies", "d": "Seborrheic dermatitis", "t6": [". Seborrheic dermatitis", ". Psoriasis", ". Tinea capitis", ". Contact dermatitis", ". Atopic dermatitis", ". Scalp psoriasis"]}
+{"i": 871, "gt": "incontinentia pigmenti", "d": "scarlet fever rash", "t6": [".scarlet fever rash", ".measles", ".rubella", ".erythema infectiosum", ".hand, foot, and mouth disease", ".chickenpox"]}
+{"i": 872, "gt": "telangiectases", "d": "Rosacea", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 873, "gt": "scleroderma", "d": "Café-au-lait macules", "t6": ["Café-au-lait macules", "Neurofibromatosis type 1", "Tuberous sclerosis", "McCune-Albright syndrome", "Legius syndrome", "Becker's nevus"]}
+{"i": 874, "gt": "psoriasis", "d": "onychomycosis", "t6": ["onychomycosis", "psoriasis", "lichen planus", "eczema", "fungal infection", "nail psoriasis"]}
+{"i": 875, "gt": "pityriasis rosea", "d": "Tinea pedis (Athlete's foot)", "t6": [". Tinea pedis (Athlete's foot)", ". Eczema", ". Psoriasis", ". Contact dermatitis", ". Scabies", ". Fungal infection"]}
+{"i": 876, "gt": "acne", "d": "acne vulgaris", "t6": ["acne vulgaris", "cystic acne", "folliculitis", "rosacea", "perioral dermatitis", "contact dermatitis"]}
+{"i": 877, "gt": "disseminated actinic porokeratosis", "d": "", "t6": []}
+{"i": 878, "gt": "acne", "d": "acne vulgaris", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 879, "gt": "papilomatosis confluentes and reticulate", "d": "melasma", "t6": ["melasma", "post-inflammatory hyperpigmentation", "lichen planus pigmentosus", "drug eruption", "tinea versicolor", "solar lentigines"]}
+{"i": 880, "gt": "rhinophyma", "d": "rhinophyma", "t6": ["rhinophyma", "rosacea", "acne vulgaris", "sebaceous hyperplasia", "folliculitis", "pustular rosacea"]}
+{"i": 881, "gt": "porokeratosis actinic", "d": "", "t6": []}
+{"i": 882, "gt": "erythema elevatum diutinum", "d": "nodular vasculitis", "t6": [". nodular vasculitis", ". erythema nodosum", ". erythema induratum", ". sarcoidosis", ". cellulitis", ". deep fungal infection"]}
+{"i": 883, "gt": "dermatomyositis", "d": "Herpes Simplex Virus (HSV) infection", "t6": [". Herpes Simplex Virus (HSV) infection", ". Impetigo", ". Allergic Contact Dermatitis", ". Seborrheic Dermatitis", ". Eczema", ". Rosacea"]}
+{"i": 884, "gt": "allergic contact dermatitis", "d": "", "t6": []}
+{"i": 885, "gt": "hailey hailey disease", "d": "acne keloidalis nuchae", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 886, "gt": "tick bite", "d": "Molluscum contagiosum", "t6": [". Moles", ". Warts", ". Chickenpox", ". Insect bites", ". Folliculitis", ". Keratosis pilaris"]}
+{"i": 887, "gt": "erythema nodosum", "d": "cellulitis", "t6": [". cellulitis", ". erysipelas", ". contact dermatitis", ". insect bite reaction", ". stasis dermatitis", ". folliculitis"]}
+{"i": 888, "gt": "lichen planus", "d": "Livedo reticularis", "t6": [". Livedo reticularis", ". Erythema ab igne", ". Cutis marmorata", ". Vasculitis", ". Thrombosis", ". Psoriasis"]}
+{"i": 889, "gt": "lupus erythematosus", "d": "vasculitis", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 890, "gt": "scleromyxedema", "d": "cellulitis", "t6": ["cellulitis", "erysipelas", "venous stasis dermatitis", "contact dermatitis", "insect bite reaction", "folliculitis"]}
+{"i": 891, "gt": "squamous cell carcinoma", "d": "basal cell carcinoma", "t6": [". Basal Cell Carcinoma", ". Squamous Cell Carcinoma", ". Melanoma", ". Sebaceous Gland Carcinoma", ". Dermatofibroma", ". Keratoacanthoma"]}
+{"i": 892, "gt": "scleromyxedema", "d": "Seborrheic dermatitis", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 893, "gt": "prurigo nodularis", "d": "Lichen planus", "t6": [". Lichen planus", ". Psoriasis", ". Eczema", ". Scabies", ". Fungal infection", ". Insect bite reaction"]}
+{"i": 894, "gt": "pityriasis lichenoides chronica", "d": "acne vulgaris", "t6": ["acne vulgaris", "folliculitis", "keratosis pilaris", "insect bites", "drug eruption", "pityrosporum ovale folliculitis"]}
+{"i": 895, "gt": "erythema multiforme", "d": "Herpes Simplex Virus (HSV) infection, commonly known as cold sores or fever blisters", "t6": [". Herpes Simplex Virus (HSV) infection, commonly known as cold sores or fever blisters", ". Aphthous Ulcer (canker sore)", ". Impetigo", ". Allergic Reaction", ". Contact Dermatitis", ". Oral Thrush"]}
+{"i": 896, "gt": "allergic contact dermatitis", "d": "Folliculitis", "t6": ["Folliculitis", "Acne vulgaris", "Keratosis pilaris", "Insect bites", "Contact dermatitis", "Pityriasis rosea"]}
+{"i": 897, "gt": "prurigo nodularis", "d": "Insect bites", "t6": [". . .", ". . .", ". . .", ". . .", ". . .", ". . ."]}
+{"i": 898, "gt": "perioral dermatitis", "d": "cheilitis", "t6": ["angular cheilitis", "actinic cheilitis", "contact dermatitis", "lichen planus", "herpes labialis", "simple cheilitis"]}
+{"i": 899, "gt": "urticaria", "d": "viral exanthem", "t6": ["Viral Exanthem", "Erythema Infectiosum (Fifth Disease)", "Measles", "Rubella", "Roseola Infantum", "Hand, Foot, and Mouth Disease"]}

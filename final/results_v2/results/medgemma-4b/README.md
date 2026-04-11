@@ -31,35 +31,9 @@
 | Model | Parameters | Top-1 | Top-6 | Source |
 |-------|-----------|-------|-------|--------|
 | SkinFlow (fine-tuned) | 7B | 29.19% | 71.16% | Liu et al., 2026 |
-| **MedGemma 4B (zero-shot)** | **4B** | **19.7%** | **31.1%** | **This work** |
+| **MedGemma 1.5 4B IT (zero-shot)** | **4B** | **19.7%** | **31.1%** | **This work** |
 | GPT-5.2 | Commercial | 18.24% | 42.59% | Liu et al., 2026 |
 | Qwen3-VL-235B | 235B | 17.13% | — | Liu et al., 2026 |
-
-**Exceeds GPT-5.2 on Top-1 (19.7% vs 18.24%) — a 4B medical model outperforms a commercial LLM.**
-
----
-
-## Fitzpatrick17k — LLM-as-Judge Scoring (SkinFlow-style)
-
-To enable direct comparison with SkinFlow (which uses Gemini-2.5-Pro as an LLM judge), all 1,000 predictions were re-scored by Claude Sonnet 4.5 using a 4-category clinical rubric: `correct` (exact or synonym), `subclass` (valid clinical subtype), `safety-critical` (benign↔malignant or infectious↔non-infectious boundary crossing), and `wrong`.
-
-| Metric | Substring | LLM Judge | Δ |
-|--------|:---------:|:---------:|:-:|
-| **Top-1 accuracy** | 19.70% | **22.22%** | **+2.52%** |
-| **Top-6 accuracy** | 31.10% | **34.53%** | **+3.43%** |
-
-### Verdict breakdown (999 entries)
-
-| Category | Count | % |
-|----------|:----:|:---:|
-| **Correct** (exact or synonym) | 171 | 17.12% |
-| **Subclass** (valid clinical subtype) | 51 | 5.11% |
-| **Safety-critical wrong** | 165 | 16.52% |
-| **Wrong** (unrelated) | 612 | 61.26% |
-
-**MedGemma is the #1 ranked model under LLM-as-Judge scoring.** Its medical pre-training gives it the strongest precision on exact diagnosis (17.12% correct) and the lowest safety-critical error rate among the top-ranked models.
-
-**Gap to SkinFlow:** 6.97% (22.22% vs 29.19%). This is the fine-tuning target — closing this gap through structured reasoning distillation is the thesis contribution.
 
 ---
 
@@ -80,12 +54,6 @@ To enable direct comparison with SkinFlow (which uses Gemini-2.5-Pro as an LLM j
 | Eczema | 74 | 150 | **49%** | Inflammatory triad |
 | Melanoma | 5 | 150 | **3%** | Lesion triad |
 
-### Key findings
-
-1. **Melanoma at 3% is a critical safety failure.** The most life-threatening condition is the worst detected. Melanoma is overwhelmingly misclassified as seborrheic keratosis (118/150).
-2. **Seborrheic keratosis at 91%** — the model's strongest class, but it over-predicts this condition across the board.
-3. **BCC improved to 69%** with structured output forcing focused diagnosis.
-
 ---
 
 ## MM-Skin VQA (5,452 QA pairs)
@@ -97,8 +65,6 @@ To enable direct comparison with SkinFlow (which uses Gemini-2.5-Pro as an LLM j
 | BERTScore Recall | 89.92% |
 | Exact match | 0.2% |
 | Containment match | 0.2% |
-
-**Highest BERTScore F1 of all models tested** — medical pre-training helps with semantic answer quality.
 
 ---
 

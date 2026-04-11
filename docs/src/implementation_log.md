@@ -698,6 +698,83 @@ This ensures 100% JSON compliance across all models and reproducible scoring via
 
 BERTScore computed using `roberta-large` on GPU, measuring semantic similarity between VQA predictions and ground-truth answers.
 
+### 7.13 Grok 4.20 Reasoning — API Baseline (Azure AI Foundry)
+
+Grok 4.20 Reasoning was added as a commercial reasoning-model baseline via Azure AI Foundry. Run via a new pluggable script `src/eval/run_api_benchmark.py` using litellm (`azure/grok-4-20-reasoning`, 4 workers, 50 RPM rate limit, 0 parse failures across 1,820 predictions).
+
+**Initial substring scoring:** 9.60% Top-1, 22.90% Top-6 on Fitzpatrick17k; 66.34% accuracy on Confusion Triads.
+
+**Paradox observed:** Grok scored worst of all 5 models on Fitzpatrick17k (substring) but nearly matched Qwen 3.5 9B on Confusion Triads (66.34% vs 67.07%). Inspection of the raw predictions showed Grok routinely generates clinically verbose/subtype-specific diagnoses (e.g. "acral lentiginous melanoma" for "melanoma", "morphea" for "scleroderma", "plaque psoriasis" for "psoriasis") which exact-string scorers mark wrong despite being clinically correct or valid subtypes. This observation motivated the LLM-as-Judge rescoring described in §7.14.
+
+### 7.14 LLM-as-Judge Rescoring (SkinFlow-comparable)
+
+**Motivation.** Research on SkinFlow's evaluation methodology revealed that their published 29.19% Top-1 SOTA is obtained via **Gemini-2.5-Pro as an LLM judge** with a clinical rubric that credits synonyms, valid subtypes, and penalises safety-critical errors. Our substring-matching scorer systematically deflates every model that produces verbose clinical language — making our numbers non-comparable with SkinFlow's.
+
+**Methodology.** All 5,000 predictions (5 models × 1,000 entries) were re-scored by **Claude Sonnet 4.5 as the clinical judge** using the following rubric:
+
+| Verdict | Meaning |
+|---------|---------|
+| `c` (correct) | Exact match, or medically accepted synonym/alias/abbreviation (e.g. "SCC"="squamous cell carcinoma", "atopic dermatitis"="eczema", "hives"="urticaria") |
+| `s` (subclass) | Clinically valid subclass/subtype/variant (e.g. "plaque psoriasis" for "psoriasis", "discoid lupus erythematosus" for "lupus erythematosus") |
+| `sc` (safety-critical wrong) | Crosses benign↔malignant or infectious↔non-infectious boundary — dangerous misclassification |
+| `w` (wrong) | Clinically unrelated, empty, invalid, or gibberish |
+
+**Top-1 (judge) = (c + s) / n** (following SkinFlow's convention of crediting both correct answers and valid subclasses).
+
+**Top-6 (judge)** = fraction of entries where any of the 6 differential predictions was judged c/s against the ground truth.
+
+**Infrastructure.** Predictions were split into 30 batches (5 models × 6 chunks of 100-200 entries), processed in parallel by 30 Claude Sonnet subagents, each applying the rubric to ~200 entries with the 114 Fitzpatrick17k canonical class names in context. Raw predictions were read from `raw_response` fields (preserving the original model output verbatim, unaffected by any preprocessing). Input batches and per-chunk verdicts are preserved at `data/judge_batches/` and `data/judge_verdicts/`.
+
+**Alternative implementation.** A standalone script `LLM-As-a-Judge/judge_bedrock.py` was also built to run the same judge via the AWS Bedrock Converse API using Claude Sonnet 4.5 or Opus 4.5 directly. This provides a reproducible, cost-tracked path that doesn't require spawning subagents and matches SkinFlow's single-judge methodology exactly.
+
+### 7.15 LLM-as-Judge Leaderboard (Final)
+
+**Fitzpatrick17k — Top-1 and Top-6 under both scoring methods:**
+
+| Rank | Model | Params | Top-1 (substring) | Top-1 (judge) | Δ | Top-6 (substring) | Top-6 (judge) | Δ | Safety-crit |
+|:---:|-------|:-----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
+| 🥇 | **MedGemma 4B** | 4B | 19.70% | **22.22%** | +2.5% | 31.10% | 34.53% | +3.4% | 16.52% |
+| 🥈 | **Qwen 3.5 9B** | 9B | 17.30% | **19.12%** | +1.8% | 35.00% | 39.14% | +4.1% | 23.52% |
+| 🥉 | **Grok 4.20 Reasoning** | API | 9.60% | **17.05%** | **+7.5%** | 22.90% | **39.92%** | **+17.0%** | 21.97% |
+| 4 | Qwen 3.5 4B | 4B | 12.00% | 14.61% | +2.6% | 27.70% | 31.23% | +3.5% | 18.02% |
+| 5 | Gemma 4 E4B | ~4B | 5.90% | 7.32% | +1.4% | 22.10% | 24.47% | +2.4% | 13.74% |
+
+**Verdict breakdown:**
+
+| Model | Correct (c) | Subclass (s) | Safety-crit (sc) | Wrong (w) | Total |
+|-------|:----:|:----:|:----:|:----:|:----:|
+| MedGemma 4B | 171 | 51 | 165 | 612 | 999 |
+| Qwen 3.5 9B | 146 | 45 | 235 | 573 | 999 |
+| Grok 4.20 Reasoning | 116 | 54 | 219 | 608 | 997 |
+| Qwen 3.5 4B | 106 | 40 | 180 | 673 | 999 |
+| Gemma 4 E4B | 60 | 13 | 137 | 787 | 997 |
+
+**Comparison with published SkinFlow baseline:**
+
+| Model | Top-1 | Gap to SkinFlow SOTA |
+|-------|:----:|:----:|
+| SkinFlow 7B (fine-tuned) | 29.19% | — |
+| **MedGemma 4B (ours, zero-shot)** | **22.22%** | **-6.97%** |
+| Qwen 3.5 9B (ours, zero-shot) | 19.12% | -10.07% |
+| GPT-5.2 (published) | 18.24% | -10.95% |
+| Grok 4.20 Reasoning (API, ours) | 17.05% | -12.14% |
+| Qwen 3.5 4B (ours, zero-shot) | 14.61% | -14.58% |
+| Gemma 4 E4B (ours, zero-shot) | 7.32% | -21.87% |
+
+**Headline findings:**
+
+1. **MedGemma 4B is within 7 percentage points of fine-tuned SOTA — zero-shot, at 4B parameters.** Medical pre-training provides a meaningful head start. Closing this gap through structured reasoning distillation is the thesis contribution.
+2. **The ranking changed under the judge.** Grok jumps from rank 5 → rank 3 (+7.45% Top-1, +17.02% Top-6) and now has the **highest Top-6 (39.92%) of any model** — narrowly beating Qwen 9B's 39.14%. The substring scorer was systematically mislabeling Grok's clinically correct verbose/subtype answers as wrong.
+3. **Qwen 3.5 9B has the highest safety-critical error rate (23.52%)** despite being #2 on raw Top-1. It is confident and clinically literate enough to make *dangerously* wrong predictions. Fine-tuning should prioritise reducing this.
+4. **Gemma 4 E4B has the lowest safety-critical rate (13.74%)** because its errors are mostly clinically unrelated rather than dangerously close to the truth — it fails *safely* but also *uselessly*.
+5. **SkinFlow-comparable numbers.** Under an equivalent LLM-judge scoring protocol, our three strongest zero-shot models land at 22.22% / 19.12% / 17.05% — within striking distance of the 29.19% fine-tuned SOTA. Fine-tuning with structured reasoning should close the remaining gap.
+
+**Artifacts.**
+- Per-chunk verdict files: `data/judge_verdicts/verdicts_<model>_<batch>_<chunk>.json` (30 files)
+- Final aggregated leaderboard: `data/judge_verdicts/leaderboard.json`
+- Input batches: `data/judge_batches/judge_batch_<model>_<batch>_<chunk>.jsonl` (30 files)
+- Bedrock-based alternative: `LLM-As-a-Judge/judge_bedrock.py`
+
 ### 7.7 Additional Data Access (Newly Approved)
 
 During this phase, access was granted to two previously gated resources:

@@ -1,9 +1,9 @@
 # Qwen 3.5 9B — Zero-Shot Baseline Results (v2)
 
 - **Model:** `Qwen/Qwen3.5-9B` (9B parameters)
-- **Type:** General-purpose natively multimodal VLM (early fusion)
+- **Type:** General-purpose VLM (largest in evaluation)
 - **Evaluation:** Zero-shot (no fine-tuning), vLLM guided JSON structured output
-- **Infrastructure:** NVIDIA L40S (48GB), vLLM 0.19.0, bfloat16, batch size 32
+- **Infrastructure:** NVIDIA L40S (48GB), vLLM 0.19.0, bfloat16, batch size 8
 - **Date:** 2026-04-09
 
 ---
@@ -26,41 +26,14 @@
 | V | 94 | 19.1% |
 | VI | 36 | 16.7% |
 
-**Good fairness profile** — only 4.1% spread between best and worst FST. Slightly better on darker skin (FST IV-V) than lighter skin.
-
 ### Comparison with published baselines
 
 | Model | Parameters | Top-1 | Top-6 | Source |
 |-------|-----------|-------|-------|--------|
 | SkinFlow (fine-tuned) | 7B | 29.19% | 71.16% | Liu et al., 2026 |
-| MedGemma 4B (zero-shot) | 4B | 19.7% | 31.1% | This work |
 | GPT-5.2 | Commercial | 18.24% | 42.59% | Liu et al., 2026 |
 | **Qwen 3.5 9B (zero-shot)** | **9B** | **17.3%** | **35.0%** | **This work** |
 | Qwen3-VL-235B | 235B | 17.13% | — | Liu et al., 2026 |
-
-**Matches Qwen3-VL-235B (17.3% vs 17.13%) at 26x fewer parameters. Highest Top-6 accuracy among our models at 35.0%.**
-
----
-
-## Fitzpatrick17k — LLM-as-Judge Scoring (SkinFlow-style)
-
-Re-scored all 1,000 predictions with Claude Sonnet 4.5 as a clinical judge using a 4-category rubric: `correct`, `subclass`, `safety-critical`, `wrong`.
-
-| Metric | Substring | LLM Judge | Δ |
-|--------|:---------:|:---------:|:-:|
-| **Top-1 accuracy** | 17.30% | **19.12%** | **+1.82%** |
-| **Top-6 accuracy** | 35.00% | **39.14%** | **+4.14%** |
-
-### Verdict breakdown (999 entries)
-
-| Category | Count | % |
-|----------|:----:|:---:|
-| **Correct** (exact or synonym) | 146 | 14.61% |
-| **Subclass** (valid clinical subtype) | 45 | 4.50% |
-| **Safety-critical wrong** | 235 | 23.52% |
-| **Wrong** (unrelated) | 573 | 57.36% |
-
-**Qwen 3.5 9B ranks #2 under the LLM judge (Top-1) and tied-#1 on Top-6.** However, it has **the highest safety-critical error rate of all 5 models (23.52%)** — it's confident and clinically literate enough to make *dangerously wrong* predictions (e.g. misclassifying malignant as benign). Fine-tuning must prioritise reducing this rate.
 
 ---
 
@@ -80,14 +53,6 @@ Re-scored all 1,000 predictions with Claude Sonnet 4.5 as a clinical judge using
 | Psoriasis | 97 | 150 | **65%** | Inflammatory triad |
 | Eczema | 92 | 150 | **61%** | Inflammatory triad |
 | Melanoma | 65 | 150 | **43%** | Lesion triad |
-
-### Key findings
-
-1. **Best overall triads accuracy (67.1%)** across all models tested.
-2. **Melanoma at 43% — best zero-shot melanoma detection.** Still inadequate clinically but a significant improvement over MedGemma (3%) and Qwen 4B (15%).
-3. **Balanced performance across all 6 classes** — no single class below 43%. Most equitable confusion triad results.
-4. **BCC at 76%** — strong malignant lesion detection, highest of all models.
-5. **Seb dermatitis at 79%** — excellent for our focus condition.
 
 ---
 
