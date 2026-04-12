@@ -307,7 +307,7 @@ Four models were selected for evaluation, spanning medical-specialized and gener
 | Model | HuggingFace ID | Size | Type | Rationale |
 |-------|---------------|------|------|-----------|
 | **MedGemma 1.5 4B IT** | `google/medgemma-1.5-4b-it` | 4B | Medical | Published 62% on dermatology benchmarks. Trained on dermatology images. Strongest medical baseline. |
-| **Gemma 4 E4B IT** | `google/gemma-4-E4B-it` | 4B | General | General-purpose baseline from same family as MedGemma. Tests whether medical pre-training matters. |
+| **Gemma 4 E4B IT** | `google/gemma-4-E4B-it` | 4.5B effective (8B total) | General | General-purpose baseline from same family as MedGemma. Tests whether medical pre-training matters. |
 | **Qwen 3.5 4B** | `Qwen/Qwen3.5-4B` | 4B | General | Small VLM baseline. Tests whether a 4B model can be competitive after fine-tuning. |
 | **Qwen 3.5 9B** | `Qwen/Qwen3.5-9B` | 9B | General | Larger VLM. Tests whether scale helps — comparable to SkinFlow's 7B base model. |
 
@@ -484,7 +484,7 @@ These three reference points define the landscape our models must navigate:
 | Model | HuggingFace ID | Size | Type | Zero-shot hypothesis |
 |-------|---------------|------|------|---------------------|
 | **MedGemma 1.5 4B IT** | `google/medgemma-1.5-4b-it` | 4B | Medical | Should score highest zero-shot (medical pre-training includes dermatology) |
-| **Gemma 4 E4B IT** | `google/gemma-4-E4B-it` | ~4B | General | Same family as MedGemma but no medical training — tests if medical pre-training matters |
+| **Gemma 4 E4B IT** | `google/gemma-4-E4B-it` | 4.5B effective (8B total) | General | Same family as MedGemma but no medical training — tests if medical pre-training matters |
 | **Qwen 3.5 4B** | `Qwen/Qwen3.5-4B` | 4B | General | Natively multimodal (early fusion). Different architecture baseline. |
 | **Qwen 3.5 9B** | `Qwen/Qwen3.5-9B` | 9B | General | Larger model — tests if scale within the SLM range improves dermatology performance |
 
@@ -610,7 +610,7 @@ To contextualize our results, the following published comparisons were compiled 
 | **Qwen 3.5 9B (our zero-shot)** | **9B** | **17.3%** | **35.0%** | **This work** |
 | Qwen3-VL-235B | 235B | 17.13% | — | Liu et al., arXiv:2601.09136 |
 | **Qwen 3.5 4B (our zero-shot)** | **4B** | **12.0%** | **27.7%** | **This work** |
-| **Gemma 4 E4B (our zero-shot)** | **~4B** | **5.9%** | **22.1%** | **This work** |
+| **Gemma 4 E4B (our zero-shot)** | **4.5B eff. (8B total)** | **5.9%** | **22.1%** | **This work** |
 
 *All results use vLLM guided JSON structured output (StructuredOutputsParams) to enforce consistent Top-6 differential lists, confidence enums, and reasoning fields. This ensures reproducible scoring across all models.*
 
@@ -737,7 +737,7 @@ Grok 4.20 Reasoning was added as a commercial reasoning-model baseline via Azure
 | 🥈 | **Qwen 3.5 9B** | 9B | 17.30% | **19.12%** | +1.8% | 35.00% | 39.14% | +4.1% | 23.52% |
 | 🥉 | **Grok 4.20 Reasoning** | API | 9.60% | **17.05%** | **+7.5%** | 22.90% | **39.92%** | **+17.0%** | 21.97% |
 | 4 | Qwen 3.5 4B | 4B | 12.00% | 14.61% | +2.6% | 27.70% | 31.23% | +3.5% | 18.02% |
-| 5 | Gemma 4 E4B | ~4B | 5.90% | 7.32% | +1.4% | 22.10% | 24.47% | +2.4% | 13.74% |
+| 5 | Gemma 4 E4B | 4.5B eff. (8B total) | 5.90% | 7.32% | +1.4% | 22.10% | 24.47% | +2.4% | 13.74% |
 
 **Verdict breakdown:**
 
