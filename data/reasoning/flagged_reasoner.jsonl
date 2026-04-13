@@ -1,1 +1,2 @@
 {"image_path": "final/train/lupus_subacute/3123.png", "label": "lupus_subacute", "category": "inflammatory", "reason": "content_filter | finish_reason=content_filter"}
+{"image_path": "final/train/lupus_subacute/2631.png", "label": "lupus_subacute", "category": "inflammatory", "reason": "content_filter | finish_reason=content_filter"}
