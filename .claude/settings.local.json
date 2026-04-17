@@ -22,7 +22,10 @@
       "Bash(tail:*)",
       "Bash(mkdir:*)",
       "Read",
-      "Write(data/judge_verdicts/**)"
+      "Write(data/judge_verdicts/**)",
+      "Bash(curl -s \"https://huggingface.co/api/models?author=unsloth&search=Qwen+VL&limit=20\")",
+      "Bash(curl -s \"https://huggingface.co/api/models?author=unsloth&search=Qwen3.5&limit=50\")",
+      "Bash(curl:*)"
     ]
   }
 }
