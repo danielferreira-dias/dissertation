@@ -56,7 +56,9 @@ class TestBuildFullReasoningPayload:
         assert len(payload["top_n"]) == 3  # diagnosis + 2 differentials
 
     def test_top_n_handles_zero_differentials(self):
-        entry = load_fixture()[3]  # psoriasis with differentials=[] (but also flagged)
+        # Builder is format-agnostic; even flagged entries (which prepare_splits
+        # would route to audit) are handled safely when the differentials list is empty.
+        entry = load_fixture()[3]
         payload = build_full_reasoning_payload(entry)
         assert payload["top_n"] == ["Psoriasis"]
 

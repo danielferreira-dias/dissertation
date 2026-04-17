@@ -27,8 +27,6 @@ from typing import Any, Callable
 
 USER_PROMPT = "Diagnose this skin condition with structured reasoning."
 
-FORMATS = ("label_only", "full_reasoning")
-
 
 def _prettify(label: str) -> str:
     return label.replace("_", " ").title()
@@ -36,6 +34,8 @@ def _prettify(label: str) -> str:
 
 def build_label_only_payload(entry: dict[str, Any]) -> dict[str, Any]:
     """Minimal assistant response: diagnosis + category only."""
+    # Anchor to ground truth (not reasoner's diagnosis) — the reasoner may
+    # have defended a wrong label; label_match=false entries are filtered elsewhere.
     return {
         "diagnosis": _prettify(entry["ground_truth"]),
         "category": entry.get("category", ""),
@@ -46,6 +46,8 @@ def build_full_reasoning_payload(entry: dict[str, Any]) -> dict[str, Any]:
     """Full unified schema per spec §3.2."""
     reasoning = entry.get("reasoning", {}) or {}
     observation = entry.get("observation", {}) or {}
+    # Anchor to ground truth (not reasoner's diagnosis) — the reasoner may
+    # have defended a wrong label; label_match=false entries are filtered elsewhere.
     diagnosis = _prettify(entry["ground_truth"])
     differentials = reasoning.get("differentials") or []
 
@@ -77,6 +79,8 @@ _BUILDERS: dict[str, Callable[[dict], dict]] = {
     "full_reasoning": build_full_reasoning_payload,
 }
 
+FORMATS = tuple(_BUILDERS.keys())
+
 
 def entry_to_chat(entry: dict[str, Any], image_root: Path, format_name: str) -> dict[str, Any]:
     """Build a single chat-format training example for the given format."""
@@ -107,7 +111,10 @@ def prepare_splits(
     Writes 5 files into out_dir: train/val × label_only/full_reasoning + audit.jsonl.
     Returns a summary dict with counts.
     """
-    entries = [json.loads(l) for l in Path(source).read_text().splitlines() if l.strip()]
+    if not 0.0 < val_fraction < 1.0:
+        raise ValueError(f"val_fraction must be in (0, 1), got {val_fraction}")
+    with Path(source).open() as f:
+        entries = [json.loads(l) for l in f if l.strip()]
 
     audited: list[dict] = []
     kept: list[dict] = []
@@ -182,7 +189,7 @@ def main() -> None:
     print("Emitted:")
     for fmt in FORMATS:
         for split in ("train", "val"):
-            print(f"  {args.out_dir}/{split}.{fmt}.jsonl")
+            print(f"  {args.out_dir / f'{split}.{fmt}.jsonl'}")
 
 
 if __name__ == "__main__":
