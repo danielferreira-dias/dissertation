@@ -1,0 +1,12 @@
+{
+  "source": "data/reasoning/reasoning.jsonl",
+  "total_entries": 28486,
+  "train_size": 25637,
+  "val_size": 2849,
+  "val_ratio": 0.1,
+  "seed": 42,
+  "formats": [
+    "label_only",
+    "full_reasoning"
+  ]
+}
