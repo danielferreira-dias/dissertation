@@ -22,7 +22,10 @@
       "Bash(tail:*)",
       "Bash(mkdir:*)",
       "Read",
-      "Write(data/judge_verdicts/**)"
+      "Write(data/judge_verdicts/**)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(gh pr *)"
     ]
   }
 }
