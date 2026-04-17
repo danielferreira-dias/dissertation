@@ -1148,6 +1148,42 @@ Classes 6-9, 12, 14, 16-19 are not currently in the unified training dataset but
 
 ---
 
+## Phase 8: Fine-Tuning Pipeline (Implementation)
+
+### 8.1 Pipeline Overview
+
+`src/fine_tune/` implements a config-driven LoRA SFT pipeline over TRL `SFTTrainer` + PEFT. One entrypoint (`python -m fine_tune.train --config <yaml> [--format {label_only,full_reasoning}]`) fine-tunes any of the four base VLMs; per-model variations live in four checked-in YAML configs. Vision towers are frozen (preserves MedSigLIP's medical advantage on MedGemma, and Qwen VL's early-fusion features on Qwen 3.5). LoRA rank 64 / alpha 128, 5 epochs, cosine LR schedule, `paged_adamw_8bit` on the 9B model only.
+
+### 8.2 Ablation: label_only vs full_reasoning
+
+`prepare_data.py` emits both formats from the same stratified 95/5 split (seed=42):
+
+- `label_only` — assistant response is `{"diagnosis", "category"}` only
+- `full_reasoning` — assistant response is the unified schema (diagnosis, top_n, confidence, category, observation, reasoning, differentials)
+
+Each model is trained twice (once per format), giving 8 runs total. The comparison measures whether structured reasoning signal beats label-only supervision for each of the four base architectures.
+
+### 8.3 Artifacts
+
+- Per-epoch LoRA checkpoints on the `/workspace` network volume (save_total_limit=3)
+- Best-by-eval-loss adapter pushed to a private HF Hub repo (`danielfdias98/<model>-derm-reasoning-{label-only,full-reasoning}`)
+- `manifest.csv` ledger: one row per completed run (model, format, config SHA, best eval_loss, wall-clock hours)
+
+### 8.4 Operational Workflow (RunPod L40S)
+
+1. `scripts/sync_to_volume.sh` — one-time rsync of `final/train/` + `reasoning.jsonl` to the network volume (~30 min).
+2. `scripts/setup_pod.sh` — once per fresh pod: installs GPU deps, HF login, verifies GPU + data.
+3. `scripts/run.sh configs/<model>.yaml [--format label_only]` — one invocation per (model, format) pair.
+
+Pod restart mid-run: `scripts/run.sh configs/<model>.yaml --resume` auto-resumes from the latest epoch checkpoint.
+
+### 8.5 Design & Plan References
+
+- Design spec: `docs/superpowers/specs/2026-04-17-fine-tune-pipeline-design.md`
+- Implementation plan: `docs/superpowers/plans/2026-04-17-fine-tune-pipeline.md`
+
+---
+
 ## Next Steps
 
 1. **Zero-shot baselines:** Run all 4 student models on Fitzpatrick17k + MM-Skin VQA + Confusion Triads (RunPod GPU)

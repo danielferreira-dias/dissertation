@@ -26,3 +26,8 @@ data/dataset/
 data/raw/
 final/benchmarks/
 final/train/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/

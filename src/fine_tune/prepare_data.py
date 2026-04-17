@@ -1,150 +1,195 @@
-"""
-Prepare training data in two formats for the ablation study.
+"""Convert reasoning.jsonl into stratified train/val splits in chat format.
 
-Reads reasoning.jsonl and produces:
-  - label_only/train.jsonl    — diagnosis + category only
-  - full_reasoning/train.jsonl — complete structured reasoning output
+Emits BOTH format variants from the same stratified split for an ablation
+comparison:
+  - <split>.label_only.jsonl     — assistant = {diagnosis, category}
+  - <split>.full_reasoning.jsonl — assistant = unified schema per spec §3.2
 
-Both formats use the Qwen VL chat template (image + text → assistant response).
-A held-out validation split (10%) is created for early stopping.
+Run once per dataset. Output consumed by `src/fine_tune/train.py`.
 
 Usage:
-  python src/fine_tune/prepare_data.py
-  python src/fine_tune/prepare_data.py --input data/reasoning/reasoning.jsonl --output-dir data/fine_tune
-  python src/fine_tune/prepare_data.py --val-ratio 0.1 --seed 42
+    python -m fine_tune.prepare_data \
+        --source data/reasoning/reasoning.jsonl \
+        --out-dir data/reasoning \
+        --image-root /workspace/data/images \
+        --val-fraction 0.05 \
+        --seed 42
 """
+from __future__ import annotations
 
 import argparse
 import json
 import random
+from collections import defaultdict
 from pathlib import Path
+from typing import Any, Callable
 
 
-def format_observation_text(obs: dict) -> str:
-    """Format observation dict into readable text."""
-    parts = []
-    for key in ["morphology", "color", "texture", "border", "distribution", "size_extent"]:
-        val = obs.get(key, "")
-        if val:
-            parts.append(val)
-    return " ".join(parts)
+USER_PROMPT = "Diagnose this skin condition with structured reasoning."
 
 
-def make_label_only(entry: dict) -> dict:
-    """Create a label-only training example (diagnosis + category)."""
-    image_path = entry["image_path"]
-    ground_truth = entry["ground_truth"]
-    category = entry["category"]
+def _prettify(label: str) -> str:
+    return label.replace("_", " ").title()
 
-    assistant_output = {
-        "diagnosis": ground_truth.replace("_", " ").title(),
-        "category": category,
+
+def build_label_only_payload(entry: dict[str, Any]) -> dict[str, Any]:
+    """Minimal assistant response: diagnosis + category only."""
+    # Anchor to ground truth (not reasoner's diagnosis) — the reasoner may
+    # have defended a wrong label; label_match=false entries are filtered elsewhere.
+    return {
+        "diagnosis": _prettify(entry["ground_truth"]),
+        "category": entry.get("category", ""),
     }
+
+
+def build_full_reasoning_payload(entry: dict[str, Any]) -> dict[str, Any]:
+    """Full unified schema per spec §3.2."""
+    reasoning = entry.get("reasoning", {}) or {}
+    observation = entry.get("observation", {}) or {}
+    # Anchor to ground truth (not reasoner's diagnosis) — the reasoner may
+    # have defended a wrong label; label_match=false entries are filtered elsewhere.
+    diagnosis = _prettify(entry["ground_truth"])
+    differentials = reasoning.get("differentials") or []
+
+    top_n = [diagnosis] + [
+        d.get("condition", "").strip().title()
+        for d in differentials
+        if d.get("condition", "").strip()
+    ]
 
     return {
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "image", "image": image_path},
-                    {"type": "text", "text": "Diagnose this skin condition."},
-                ],
-            },
-            {
-                "role": "assistant",
-                "content": json.dumps(assistant_output),
-            },
-        ]
-    }
-
-
-def make_full_reasoning(entry: dict) -> dict:
-    """Create a full reasoning training example (observations + reasoning + differentials)."""
-    image_path = entry["image_path"]
-    ground_truth = entry["ground_truth"]
-    category = entry["category"]
-    observation = entry.get("observation", {})
-    reasoning = entry.get("reasoning", {})
-
-    assistant_output = {
-        "diagnosis": ground_truth.replace("_", " ").title(),
-        "category": category,
-        "observation": format_observation_text(observation),
-        "morphology": reasoning.get("morphology", ""),
-        "color": reasoning.get("color", ""),
-        "texture": reasoning.get("texture", ""),
-        "border": reasoning.get("border", ""),
-        "distribution": reasoning.get("distribution", ""),
-        "reasoning": reasoning.get("clinical_reasoning", ""),
-        "differentials": reasoning.get("differentials", []),
+        "diagnosis": diagnosis,
+        "top_n": top_n,
         "confidence": reasoning.get("confidence", "medium"),
+        "category": entry.get("category", ""),
+        "observation": {
+            "morphology": observation.get("morphology", ""),
+            "color": observation.get("color", ""),
+            "texture": observation.get("texture", ""),
+            "border": observation.get("border", ""),
+            "distribution": observation.get("distribution", ""),
+        },
+        "reasoning": reasoning.get("clinical_reasoning", ""),
+        "differentials": differentials,
     }
 
+
+_BUILDERS: dict[str, Callable[[dict], dict]] = {
+    "label_only": build_label_only_payload,
+    "full_reasoning": build_full_reasoning_payload,
+}
+
+FORMATS = tuple(_BUILDERS.keys())
+
+
+def entry_to_chat(entry: dict[str, Any], image_root: Path, format_name: str) -> dict[str, Any]:
+    """Build a single chat-format training example for the given format."""
+    if format_name not in _BUILDERS:
+        raise ValueError(f"unknown format: {format_name!r}; expected one of {list(_BUILDERS)}")
+    abs_image = str((image_root / entry["image_path"]).as_posix())
+    payload = _BUILDERS[format_name](entry)
     return {
         "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "image", "image": image_path},
-                    {"type": "text", "text": "Diagnose this skin condition with structured reasoning."},
-                ],
-            },
-            {
-                "role": "assistant",
-                "content": json.dumps(assistant_output),
-            },
+            {"role": "user", "content": [
+                {"type": "image", "image": abs_image},
+                {"type": "text", "text": USER_PROMPT},
+            ]},
+            {"role": "assistant", "content": json.dumps(payload, ensure_ascii=False)},
         ]
     }
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Prepare fine-tuning data in label-only and full-reasoning formats")
-    parser.add_argument("--input", type=Path, default=Path("data/reasoning/reasoning.jsonl"))
-    parser.add_argument("--output-dir", type=Path, default=Path("data/fine_tune"))
-    parser.add_argument("--val-ratio", type=float, default=0.1, help="Fraction held out for validation")
-    parser.add_argument("--seed", type=int, default=42)
-    args = parser.parse_args()
+def prepare_splits(
+    source: Path,
+    out_dir: Path,
+    val_fraction: float,
+    image_root: Path,
+    seed: int,
+) -> dict[str, int]:
+    """Load reasoning.jsonl, filter flagged, stratified-split, emit both formats.
 
-    entries = [json.loads(line) for line in open(args.input)]
-    print(f"Loaded {len(entries)} reasoning entries")
+    Writes 5 files into out_dir: train/val × label_only/full_reasoning + audit.jsonl.
+    Returns a summary dict with counts.
+    """
+    if not 0.0 < val_fraction < 1.0:
+        raise ValueError(f"val_fraction must be in (0, 1), got {val_fraction}")
+    with Path(source).open() as f:
+        entries = [json.loads(l) for l in f if l.strip()]
 
-    random.seed(args.seed)
-    random.shuffle(entries)
+    audited: list[dict] = []
+    kept: list[dict] = []
+    for e in entries:
+        if (e.get("reasoning") or {}).get("label_match") is False:
+            audited.append(e)
+        else:
+            kept.append(e)
 
-    split_idx = int(len(entries) * (1 - args.val_ratio))
-    train_entries = entries[:split_idx]
-    val_entries = entries[split_idx:]
-    print(f"Split: {len(train_entries)} train, {len(val_entries)} val")
+    by_class: dict[str, list[dict]] = defaultdict(list)
+    for e in kept:
+        by_class[e["ground_truth"]].append(e)
 
-    formats = {
-        "label_only": make_label_only,
-        "full_reasoning": make_full_reasoning,
+    rng = random.Random(seed)
+    train: list[dict] = []
+    val: list[dict] = []
+    for label in sorted(by_class.keys()):
+        bucket = by_class[label][:]
+        rng.shuffle(bucket)
+        n_val = max(1, int(round(len(bucket) * val_fraction))) if len(bucket) >= 2 else 0
+        val.extend(bucket[:n_val])
+        train.extend(bucket[n_val:])
+
+    rng.shuffle(train)
+    rng.shuffle(val)
+
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    for format_name in FORMATS:
+        for split_name, split_entries in (("train", train), ("val", val)):
+            path = out_dir / f"{split_name}.{format_name}.jsonl"
+            with path.open("w") as f:
+                for e in split_entries:
+                    f.write(json.dumps(entry_to_chat(e, image_root, format_name)) + "\n")
+
+    audit_path = out_dir / "audit.jsonl"
+    with audit_path.open("w") as f:
+        for e in audited:
+            f.write(json.dumps(e) + "\n")
+
+    return {
+        "total": len(entries),
+        "audited": len(audited),
+        "train": len(train),
+        "val": len(val),
+        "classes": len(by_class),
     }
 
-    for fmt_name, fmt_fn in formats.items():
-        fmt_dir = args.output_dir / fmt_name
-        fmt_dir.mkdir(parents=True, exist_ok=True)
 
-        for split_name, split_data in [("train", train_entries), ("val", val_entries)]:
-            out_path = fmt_dir / f"{split_name}.jsonl"
-            with open(out_path, "w") as f:
-                for entry in split_data:
-                    f.write(json.dumps(fmt_fn(entry)) + "\n")
-            print(f"  {fmt_name}/{split_name}.jsonl: {len(split_data)} examples")
+def main() -> None:
+    p = argparse.ArgumentParser()
+    p.add_argument("--source", type=Path, default=Path("data/reasoning/reasoning.jsonl"))
+    p.add_argument("--out-dir", type=Path, default=Path("data/reasoning"))
+    p.add_argument("--val-fraction", type=float, default=0.05)
+    p.add_argument("--image-root", type=Path, default=Path("/workspace/data/images"))
+    p.add_argument("--seed", type=int, default=42)
+    args = p.parse_args()
 
-    # Write metadata for reproducibility
-    meta = {
-        "source": str(args.input),
-        "total_entries": len(entries),
-        "train_size": len(train_entries),
-        "val_size": len(val_entries),
-        "val_ratio": args.val_ratio,
-        "seed": args.seed,
-        "formats": list(formats.keys()),
-    }
-    with open(args.output_dir / "metadata.json", "w") as f:
-        json.dump(meta, f, indent=2)
-    print(f"\nMetadata saved to {args.output_dir / 'metadata.json'}")
+    stats = prepare_splits(
+        source=args.source,
+        out_dir=args.out_dir,
+        val_fraction=args.val_fraction,
+        image_root=args.image_root,
+        seed=args.seed,
+    )
+    print(f"Source entries:     {stats['total']}")
+    print(f"Audited (flagged):  {stats['audited']}")
+    print(f"Train examples:     {stats['train']}  (per format)")
+    print(f"Val examples:       {stats['val']}  (per format)")
+    print(f"Classes:            {stats['classes']}")
+    print("Emitted:")
+    for fmt in FORMATS:
+        for split in ("train", "val"):
+            print(f"  {args.out_dir / f'{split}.{fmt}.jsonl'}")
 
 
 if __name__ == "__main__":

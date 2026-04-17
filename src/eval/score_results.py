@@ -52,7 +52,8 @@ def score_fitzpatrick(results_file: Path) -> dict:
 
         if parsed:
             pred = normalize_diagnosis(parsed.get("diagnosis", ""))
-            top6 = [normalize_diagnosis(d) for d in parsed.get("top_6", [])]
+            top_n_raw = parsed.get("top_n") or parsed.get("top_6") or []
+            top6 = [normalize_diagnosis(d) for d in top_n_raw]
 
             if gt in pred or pred in gt:
                 top1_correct += 1

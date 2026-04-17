@@ -25,7 +25,24 @@
       "Write(data/judge_verdicts/**)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(gh pr *)"
+      "Bash(gh pr *)",
+      "Bash(git push *)",
+      "Bash(git pull *)",
+      "Bash(pip install *)",
+      "Bash(git commit *)",
+      "Bash(git rm *)",
+      "Bash(PYTHONPATH=src pytest tests/fine_tune/test_prepare_data.py -v)",
+      "Bash(python -c \"import yaml; import glob; [yaml.safe_load\\(open\\(p\\)\\) for p in sorted\\(glob.glob\\('src/fine_tune/configs/*.yaml'\\)\\)]; print\\('all YAML files parse'\\)\")",
+      "Bash(PYTHONPATH=src pytest tests/fine_tune/test_config.py -v)",
+      "Bash(PYTHONPATH=src pytest tests/fine_tune/ -q)",
+      "Bash(pip3 install *)",
+      "Bash(PYTHONPATH=src pytest tests/fine_tune/test_data.py -v)",
+      "Bash(PYTHONPATH=src pytest tests/fine_tune/test_model_loader.py -v)",
+      "Bash(PYTHONPATH=src pytest tests/fine_tune/test_callbacks.py -v)",
+      "Bash(PYTHONPATH=src python -c \"import ast; ast.parse\\(open\\('src/fine_tune/train.py'\\).read\\(\\)\\); print\\('syntax OK'\\)\")",
+      "Bash(PYTHONPATH=src python3 -c \"import ast; ast.parse\\(open\\('src/fine_tune/train.py'\\).read\\(\\)\\); print\\('syntax OK'\\)\")",
+      "Bash(chmod +x /Users/danielfd98/Documents/uni-projs/dissertation/.claude/worktrees/hardcore-elbakyan-16bad0/src/fine_tune/scripts/*.sh)",
+      "Bash(git update-index *)"
     ]
   }
 }
