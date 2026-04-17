@@ -1,0 +1,48 @@
+model:
+  id: google/medgemma-1.5-4b-it
+  trust_remote_code: true
+  torch_dtype: bfloat16
+  attn_implementation: flash_attention_2
+
+lora:
+  r: 64
+  alpha: 128
+  dropout: 0.05
+  bias: none
+  target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+  modules_to_save: []
+  freeze_vision_tower: true
+
+training:
+  output_dir: /workspace/runs/medgemma-1.5-4b
+  num_train_epochs: 5
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 8
+  learning_rate: 1.0e-4
+  warmup_ratio: 0.03
+  lr_scheduler_type: cosine
+  optim: adamw_torch
+  weight_decay: 0.01
+  bf16: true
+  gradient_checkpointing: true
+  logging_steps: 10
+  eval_strategy: steps
+  eval_steps: 200
+  save_strategy: epoch
+  save_total_limit: 3
+  load_best_model_at_end: true
+  metric_for_best_model: eval_loss
+  greater_is_better: false
+  seed: 42
+  report_to: [tensorboard]
+
+data:
+  train_file: /workspace/data/reasoning/train.full_reasoning.jsonl
+  val_file:   /workspace/data/reasoning/val.full_reasoning.jsonl
+  max_seq_length: 4096
+  image_max_pixels: 1048576
+
+hub:
+  repo_id: danielfdias98/medgemma-1.5-4b-derm-reasoning
+  push_strategy: end
+  private: true

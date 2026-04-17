@@ -1,0 +1,74 @@
+# ============================================================
+# Fine-tune config template — copy & adjust per model.
+# Field-by-field rationale inline.
+# ============================================================
+
+model:
+  id: Qwen/Qwen3.5-9B                    # HuggingFace model ID of the base VLM to fine-tune
+  trust_remote_code: true                # required for some VLM custom classes (Qwen VL, Gemma 3/4)
+  torch_dtype: bfloat16                  # bf16 = half memory of fp32, no loss scaling needed (vs fp16)
+  attn_implementation: flash_attention_2 # FA2 is 2-3x faster than sdpa on Ampere+; falls back if unavailable
+
+lora:
+  r: 64                                  # rank of LoRA decomposition; 64 is Skin-R1/DermoGPT standard
+  alpha: 128                             # LoRA scaling factor; alpha=2*r is the PEFT rule of thumb
+  dropout: 0.05                          # regularization on LoRA updates; 0.05 is standard for SFT
+  bias: none                             # don't train bias terms; saves params with ~no accuracy cost
+  target_modules:                        # which linear layers get LoRA adapters (names from named_modules)
+    - q_proj                             # query projection in attention
+    - k_proj                             # key projection in attention
+    - v_proj                             # value projection in attention
+    - o_proj                             # output projection after attention
+    - gate_proj                          # gating projection in MLP (SwiGLU)
+    - up_proj                            # up-projection in MLP (expansion)
+    - down_proj                          # down-projection in MLP (contraction)
+  modules_to_save: []                    # extra modules to train in full (e.g., "lm_head") — empty = LoRA-only
+  freeze_vision_tower: true              # keep MedSigLIP / Qwen ViT frozen; train only language-side
+
+training:
+  output_dir: /workspace/runs/qwen3.5-9b # where checkpoints + logs land on the volume
+
+  # --- Duration ---
+  num_train_epochs: 5                    # 5 passes over 28k samples; cosine LR decays to ~0 by the end
+
+  # --- Batch math ---
+  per_device_train_batch_size: 1         # samples per GPU step (kept low for 9B + image tokens)
+  gradient_accumulation_steps: 16        # steps before optimizer.step(); effective batch = 1 * 16 = 16
+
+  # --- Optimizer ---
+  learning_rate: 1.0e-4                  # peak LR; 1e-4 is standard PEFT/LoRA for VLMs
+  warmup_ratio: 0.03                     # fraction of total steps for linear warmup (stabilizes early training)
+  lr_scheduler_type: cosine              # cosine decay from peak to ~0; smooth landing, no rude drop
+  optim: paged_adamw_8bit                # 8-bit AdamW with pageable states; saves ~30% memory (9B only)
+  weight_decay: 0.01                     # mild L2 regularization on non-LoRA weights (mostly no-op here)
+
+  # --- Precision + memory ---
+  bf16: true                             # compute in bfloat16; must match torch_dtype
+  gradient_checkpointing: true           # trades recompute for memory; ~30% slower, ~40% less VRAM
+
+  # --- Logging / eval / save ---
+  logging_steps: 10                      # log loss every N steps; shows training curve live
+  eval_strategy: steps                   # run val loop at step intervals (not per-epoch)
+  eval_steps: 200                        # every 200 steps (~once per 10-15 min on 9B)
+  save_strategy: epoch                   # checkpoint at end of each epoch
+  save_total_limit: 3                    # keep only the 3 most recent epoch checkpoints to save disk
+  load_best_model_at_end: true           # after training, reload the epoch with lowest val loss
+  metric_for_best_model: eval_loss       # criterion for "best checkpoint"
+  greater_is_better: false               # lower eval_loss is better
+
+  # --- Reproducibility ---
+  seed: 42                               # same seed across models = identical data shuffle
+
+  # --- Monitoring ---
+  report_to: [tensorboard]               # TB event files in output_dir/runs; csv log also on volume
+
+data:
+  train_file: /workspace/data/reasoning/train.full_reasoning.jsonl  # default format; train.py --format flag switches
+  val_file:   /workspace/data/reasoning/val.full_reasoning.jsonl    # 5% stratified holdout
+  max_seq_length: 4096                   # hard cap on tokenized sample length; truncates if over
+  image_max_pixels: 1048576              # resize guard (≈1024x1024) so image tokens don't explode
+
+hub:
+  repo_id: danielfdias98/qwen3.5-9b-derm-reasoning  # HF Hub repo to push final adapter to; train.py --format suffixes it
+  push_strategy: end                     # push only the best checkpoint at run end (not per-epoch)
+  private: true                          # keep unpublished until dissertation-ready
