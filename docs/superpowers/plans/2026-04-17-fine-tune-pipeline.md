@@ -12,6 +12,12 @@
 
 **Execution context:** Tasks 1–6, 8, 10–12 run on laptop (pure Python, no GPU). Tasks 7, 9, 13–15 are GPU-dependent and verified on a RunPod L40S pod.
 
+**Ablation amendment (2026-04-18):** The pipeline runs **two training formats** per model for an ablation study:
+- `label_only` — assistant response is a minimal JSON: `{"diagnosis": "...", "category": "..."}`
+- `full_reasoning` — assistant response is the unified schema from spec §3.2 (`diagnosis`, `top_n`, `confidence`, `category`, `observation`, `reasoning`, `differentials`)
+
+`prepare_data.py` emits both formats from the same stratified split. `train.py` takes `--format {label_only|full_reasoning}` to choose which JSONL to load and suffixes `output_dir` / `hub.repo_id` accordingly. Total training runs: 4 models × 2 formats = 8.
+
 ---
 
 ## Task 1: Scaffold package + dev dependencies
@@ -83,9 +89,9 @@ git commit -m "scaffold(fine_tune): package layout + dev/gpu requirements"
 
 ---
 
-## Task 2: `prepare_data.py` — stratified split + schema unification
+## Task 2: `prepare_data.py` — stratified split + two-format emission
 
-The most fragile piece. Pure data transformation — fully TDD-able without GPU.
+Emits four JSONL files from the same stratified split: `train.label_only.jsonl`, `val.label_only.jsonl`, `train.full_reasoning.jsonl`, `val.full_reasoning.jsonl`. Pure data transformation — fully TDD-able without GPU.
 
 **Files:**
 - Create: `src/fine_tune/prepare_data.py`
