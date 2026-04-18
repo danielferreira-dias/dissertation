@@ -206,7 +206,7 @@ def main() -> None:
         train_dataset=train_ds,
         eval_dataset=val_ds,
         data_collator=collator,
-        tokenizer=getattr(processor, "tokenizer", processor),
+        processing_class=getattr(processor, "tokenizer", processor),
     )
 
     trainer.add_callback(CSVLoggerCallback(output_path=output_dir / "metrics.csv"))
