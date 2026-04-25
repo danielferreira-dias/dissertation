@@ -54,14 +54,13 @@ class MultimodalCollator:
         pixel_list: list[torch.Tensor] = []
 
         for row in rows:
-            conversation, images = self._split_row(row)
+            conversation, _ = self._split_row(row)
 
             full = self.processor.apply_chat_template(
                 conversation,
                 tokenize=True,
                 return_dict=True,
                 add_generation_prompt=False,
-                images=images if images else None,
             )
             full_ids = full["input_ids"].squeeze(0)
 
@@ -71,7 +70,6 @@ class MultimodalCollator:
                 tokenize=True,
                 return_dict=True,
                 add_generation_prompt=True,
-                images=images if images else None,
             )
             prefix_len = prefix["input_ids"].shape[-1]
 
@@ -106,13 +104,17 @@ class MultimodalCollator:
                 parts: list[dict] = []
                 for c in m["content"]:
                     if c.get("type") == "image":
-                        images.append(_open_image(c["image"]))
-                        parts.append({"type": "image"})
+                        pil = _open_image(c["image"])
+                        images.append(pil)
+                        parts.append({"type": "image", "image": pil})
                     else:
                         parts.append(c)
                 clean_messages.append({"role": m["role"], "content": parts})
             else:
-                clean_messages.append(m)
+                clean_messages.append({
+                    "role": m["role"],
+                    "content": [{"type": "text", "text": m["content"]}],
+                })
         return clean_messages, images
 
     def _pad(
