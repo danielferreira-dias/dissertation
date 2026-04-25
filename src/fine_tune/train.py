@@ -24,9 +24,8 @@ from datetime import datetime
 from pathlib import Path
 
 import torch
-from transformers import TrainingArguments
+from transformers import Trainer, TrainingArguments
 from transformers.integrations import TensorBoardCallback
-from trl import SFTTrainer
 
 from fine_tune.callbacks import CSVLoggerCallback, HFHubPushCallback
 from fine_tune.config import RunConfig, load_config
@@ -155,7 +154,7 @@ def _append_manifest_row(
         ])
 
 
-def _dry_run(trainer: SFTTrainer) -> None:
+def _dry_run(trainer: Trainer) -> None:
     """One fwd+bwd step to detect OOM / wiring errors before a full epoch."""
     print("[dry-run] Fetching one batch + executing one training step...")
     loader = trainer.get_train_dataloader()
@@ -200,7 +199,7 @@ def main() -> None:
 
     training_args = _build_training_args(cfg)
 
-    trainer = SFTTrainer(
+    trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=train_ds,
