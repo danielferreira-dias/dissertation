@@ -1184,6 +1184,65 @@ Pod restart mid-run: `scripts/run.sh configs/<model>.yaml --resume` auto-resumes
 
 ---
 
+## Phase 9: Dataset Publication
+
+### 9.1 Three-Tier Release on HuggingFace Hub
+
+The reasoning dataset and underlying images were released as three separate HuggingFace dataset repositories. The split is dictated by the licensing of the five source datasets — most do not permit public redistribution of their images even when their captions/metadata are freely shareable. This three-tier pattern matches the convention used by SkinCAP, SkinCaRe, and SkinFlow.
+
+| Repo | Visibility | Contents | URL |
+|---|---|---|---|
+| `danielfdias98/derm-reasoning` | 🌐 Public | Reasoning annotations only (Parquet), 2 configs × 2 splits, dataset card, `download_images.py` | https://huggingface.co/datasets/danielfdias98/derm-reasoning |
+| `danielfdias98/derm-reasoning-redistributable` | 🌐 Public | SCIN + PAD-UFES-20 images only (~7,500 files, ~8 GB Parquet) — both publish under licenses (Apache 2.0, CC-BY 4.0) that permit redistribution | https://huggingface.co/datasets/danielfdias98/derm-reasoning-redistributable |
+| `danielfdias98/derm-reasoning-full` | 🔒 Private | Full image set (28,486 images) + all four reasoning JSONLs, examiner access only | https://huggingface.co/datasets/danielfdias98/derm-reasoning-full |
+
+### 9.2 Per-Source Licensing Decision Matrix
+
+The three-tier split was driven by the following analysis of each source dataset's redistribution policy:
+
+| Source | Train rows | License | Public Hub redistribution? |
+|---|---:|---|---|
+| SCIN (Google Research) | 4,332 | Apache 2.0 | ✅ Yes — included in `derm-reasoning-redistributable` and `derm-reasoning-full` |
+| PAD-UFES-20 | 1,706 | CC BY 4.0 | ✅ Yes — included in both image repos |
+| SkinCAP captions | 3,607 | CC-BY-NC-SA 4.0 | ⚠ Captions OK with non-commercial term inheritance; embedded DDI images excluded from public repos per Stanford Research Use Agreement |
+| Kaggle DermNet | 15,221 | "Other" — images scraped from DermNet website | ❌ Original copyright applies; included only in private repo |
+| DermNet NZ (scraped) | 771 | DermNet NZ copyright | ❌ Takedown risk; included only in private repo |
+
+The unified dataset license is **CC-BY-NC-SA 4.0** to inherit SkinCAP's most restrictive component. Use is **non-commercial research only**.
+
+### 9.3 Source Attribution per Row
+
+Every row in all three repos carries a `source` column populated by walking each per-source folder under `data/dataset/<source>/` and indexing image basenames. SCIN, PAD-UFES-20, SkinCAP, Kaggle DermNet, and DermNet NZ are checked in priority order; rows whose basename doesn't match any source folder fall back to filename heuristics (`PAT_*` → `pad_ufes`, numeric hash → `dermnet_nz`, descriptive → `kaggle_dermnet`).
+
+This attribution preserves provenance for downstream auditing — anyone reproducing or extending the dataset can filter to a specific source for license-compliant subset extraction.
+
+### 9.4 Annotation License
+
+The structured reasoning annotations themselves are the author's contribution and were generated using **Gemini 2.5 Flash** as a label-anchored teacher. They are released under the unified dataset license (CC-BY-NC-SA 4.0) alongside the source attribution metadata.
+
+### 9.5 Reproducibility for Downstream Users
+
+Three reproduction paths, ordered by ease:
+
+1. **Annotations + redistributable images** — `load_dataset("danielfdias98/derm-reasoning")` for the reasoning JSONLs; `load_dataset("danielfdias98/derm-reasoning-redistributable")` for the ~7,500 SCIN + PAD-UFES-20 images. Self-contained, no external auth.
+2. **Annotations + bring-your-own-images** — `load_dataset("danielfdias98/derm-reasoning")` plus `python download_images.py` (in the public repo) to fetch the remaining ~21,000 images directly from each original source (SCIN GCS, Kaggle, HuggingFace, manual DermNet NZ).
+3. **Examiner / private access** — request access to `derm-reasoning-full` via HuggingFace Hub's per-user grant for the complete image set.
+
+### 9.6 Citation
+
+```bibtex
+@misc{dias2026derm-reasoning,
+  author = {Ferreira Dias, Daniel},
+  title  = {Dermatology Reasoning Dataset: Structured chain-of-thought annotations across five public sources},
+  year   = {2026},
+  howpublished = {\url{https://huggingface.co/datasets/danielfdias98/derm-reasoning}},
+}
+```
+
+Users are required to cite all five source datasets (SCIN, PAD-UFES-20, SkinCAP, Kaggle DermNet, DermNet NZ) in addition to this one — the dataset card lists the canonical citations.
+
+---
+
 ## Next Steps
 
 1. **Zero-shot baselines:** Run all 4 student models on Fitzpatrick17k + MM-Skin VQA + Confusion Triads (RunPod GPU)
