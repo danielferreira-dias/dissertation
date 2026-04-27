@@ -1,34 +1,27 @@
-# GPU stack pinned for the fine-tune campaign.
-# Compatible with NVIDIA driver R565 (reports "CUDA 12.7"), which supports CUDA toolkit ≤ 12.6.
-# Validated combo: torch 2.6.0+cu124 + transformers 5.6.2 + peft 0.19.1.
+# GPU stack pinned for the fine-tune campaign — Unsloth-based.
 #
-# IMPORTANT: install via setup_pod.sh — that script handles the order:
-#   1) torch + torchvision (this file via --extra-index-url)
-#   2) the rest of pure-Python deps (this file)
-#   3) CUDA kernels (requirements-kernels.txt, --no-build-isolation)
+# Unsloth bundles its own pinned versions of torch, peft, trl, transformers,
+# accelerate, bitsandbytes, flash-attn, flash-linear-attention, and triton —
+# matched per (cuda, torch) extra. We pick the extra that fits the pod's
+# NVIDIA driver R565 (CUDA 12.7 reported, supports toolkit ≤ 12.6):
 #
-# Do NOT loosen these pins without a full env validation pass — flash-linear-attention 0.5.0
-# pulls torch 2.7+, which exceeds R565's CUDA capability, makes torch.cuda unusable, and
-# cascades through torchvision/transformers/peft.
+#   cu124-torch260   torch 2.6.0 + cu124, current pod baseline
+#
+# If the pod ships a newer driver (R570+, CUDA 12.8+), bump to:
+#   cu128-torch280   torch 2.8.0 + cu128
+#
+# Reference: https://docs.unsloth.ai/get-started/install/pip-install
+#
+# DO NOT replace `unsloth[cu124-torch260]` with bare `unsloth`. Bare-install
+# auto-resolution can pull a torch version that exceeds the pod's CUDA cap
+# (this killed an earlier run when fla 0.5.0 forced torch 2.7+ → cu130).
 
---extra-index-url https://download.pytorch.org/whl/cu124
+unsloth[cu124-torch260]
 
-torch==2.6.0+cu124
-torchvision==0.21.0+cu124
-
-transformers==5.6.2
-peft>=0.19.1,<0.20
-trl>=0.13,<0.30
-accelerate>=1.13,<2.0
-bitsandbytes>=0.48,<1.0
-datasets>=3.0,<4.0
-
-pillow>=10.0
+# Pure-Python deps that are NOT bundled in Unsloth's extras.
 pyyaml>=6.0
 tensorboard>=2.15
 sentencepiece>=0.2
-huggingface-hub>=0.36
-
-# Optional dataset/eval helpers used by other scripts in the repo
+pillow>=10.0
 numpy>=1.26,<3.0
 pandas>=2.2

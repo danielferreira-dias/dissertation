@@ -24,12 +24,11 @@ from datetime import datetime
 from pathlib import Path
 
 import torch
-from transformers import Trainer, TrainingArguments
 from transformers.integrations import TensorBoardCallback
 
 from fine_tune.callbacks import CSVLoggerCallback, HFHubPushCallback
 from fine_tune.config import RunConfig, load_config
-from fine_tune.data import MultimodalCollator, load_chat_dataset
+from fine_tune.data import PathToImageCollator, load_chat_dataset
 from fine_tune.model_loader import load_model_and_processor
 
 
@@ -97,9 +96,11 @@ def _copy_config_into_output_dir(cfg_path: Path, output_dir: Path) -> Path:
     return dest
 
 
-def _build_training_args(cfg: RunConfig) -> TrainingArguments:
+def _build_sft_config(cfg: RunConfig):
+    """Build TRL SFTConfig (TRL ≥ 0.13). Required by Unsloth + UnslothVisionDataCollator."""
+    from trl import SFTConfig
     t = cfg.training
-    return TrainingArguments(
+    return SFTConfig(
         output_dir=t.output_dir,
         num_train_epochs=t.num_train_epochs,
         per_device_train_batch_size=t.per_device_train_batch_size,
@@ -123,6 +124,11 @@ def _build_training_args(cfg: RunConfig) -> TrainingArguments:
         seed=t.seed,
         report_to=t.report_to,
         remove_unused_columns=False,
+        # SFT-specific: tell TRL it's a multimodal run (don't tokenize text fields itself).
+        dataset_kwargs={"skip_prepare_dataset": True},
+        # Don't truncate; image tokens push past common defaults.
+        max_seq_length=cfg.data.max_seq_length,
+        dataset_text_field="",  # signal "use the data_collator, not text-tokenization"
     )
 
 
@@ -154,13 +160,13 @@ def _append_manifest_row(
         ])
 
 
-def _dry_run(trainer: Trainer) -> None:
+def _dry_run(trainer) -> None:
     """One fwd+bwd step to detect OOM / wiring errors before a full epoch."""
     print("[dry-run] Fetching one batch + executing one training step...")
     loader = trainer.get_train_dataloader()
     batch = next(iter(loader))
     trainer.model.train()
-    device = trainer.model.device
+    device = next(trainer.model.parameters()).device
     inputs = {k: v.to(device) for k, v in batch.items() if torch.is_tensor(v)}
     outputs = trainer.model(**inputs)
     loss = outputs.loss
@@ -188,24 +194,31 @@ def main() -> None:
     output_dir = Path(cfg.training.output_dir)
     saved_cfg_path = _copy_config_into_output_dir(args.config, output_dir)
 
-    print(f"Loading base model + processor: {cfg.model.id}")
-    model, processor = load_model_and_processor(cfg.model, cfg.lora)
+    print(f"Loading base model + tokenizer: {cfg.model.id}")
+    model, tokenizer = load_model_and_processor(cfg.model, cfg.lora)
 
     print(f"Loading data: train={cfg.data.train_file} val={cfg.data.val_file}")
     train_ds = load_chat_dataset(Path(cfg.data.train_file))
     val_ds = load_chat_dataset(Path(cfg.data.val_file))
 
-    collator = MultimodalCollator(processor=processor, max_seq_length=cfg.data.max_seq_length)
+    collator = PathToImageCollator(model=model, tokenizer=tokenizer,
+                                   max_seq_length=cfg.data.max_seq_length)
 
-    training_args = _build_training_args(cfg)
+    sft_config = _build_sft_config(cfg)
 
-    trainer = Trainer(
+    # Switch the (peft-wrapped) model into training mode — Unsloth recommends
+    # this explicit call before constructing the trainer.
+    from unsloth import FastVisionModel
+    FastVisionModel.for_training(model)
+
+    from trl import SFTTrainer
+    trainer = SFTTrainer(
         model=model,
-        args=training_args,
+        tokenizer=tokenizer,
+        args=sft_config,
         train_dataset=train_ds,
         eval_dataset=val_ds,
         data_collator=collator,
-        processing_class=getattr(processor, "tokenizer", processor),
     )
 
     trainer.add_callback(CSVLoggerCallback(output_path=output_dir / "metrics.csv"))

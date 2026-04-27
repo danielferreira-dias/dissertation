@@ -9,7 +9,9 @@ lora:
   alpha: 128
   dropout: 0.05
   bias: none
-  target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+  # Unsloth handles dispatch via "all-linear" — covers q/k/v/o/gate/up/down_proj
+  # plus any model-specific projections without us having to enumerate them.
+  target_modules: all-linear
   modules_to_save: []
   freeze_vision_tower: true
 

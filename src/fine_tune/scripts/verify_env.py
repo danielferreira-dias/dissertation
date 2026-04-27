@@ -5,13 +5,12 @@ Run this:
   - after any pip install / version bump
   - before kicking off a long training run
 
-Exits non-zero if any check fails. Intended to catch the common "looks installed
-but actually broken" failure mode where torch was inadvertently upgraded past the
-driver's CUDA capability or kernels got ABI-mismatched.
+Exits non-zero if any check fails. Intended to catch the common
+"looks installed but actually broken" failure mode where torch was
+inadvertently upgraded past the driver's CUDA capability.
 """
 from __future__ import annotations
 
-import importlib
 import os
 import sys
 from typing import Callable
@@ -28,8 +27,6 @@ def check(name: str, fn: Callable[[], str]) -> bool:
 
 
 def main() -> int:
-    checks: list[tuple[str, Callable[[], str]]] = []
-
     def torch_version() -> str:
         import torch
         return f"{torch.__version__} (cuda={torch.version.cuda})"
@@ -41,6 +38,18 @@ def main() -> int:
         n = torch.cuda.device_count()
         names = [torch.cuda.get_device_name(i) for i in range(n)]
         return f"{n} GPU(s): {names}"
+
+    def unsloth_loadable() -> str:
+        # Importing unsloth has side effects (CUDA kernel patching), so this is
+        # the strongest single check that the env is correctly wired.
+        from unsloth import FastVisionModel  # noqa: F401
+        import unsloth
+        return getattr(unsloth, "__version__", "installed")
+
+    def trl_loadable() -> str:
+        from trl import SFTTrainer, SFTConfig  # noqa: F401
+        import trl
+        return trl.__version__
 
     def transformers_loadable() -> str:
         from transformers import AutoConfig  # noqa: F401
@@ -55,29 +64,6 @@ def main() -> int:
     def accelerate_loadable() -> str:
         import accelerate
         return accelerate.__version__
-
-    def torchvision_loadable() -> str:
-        # torchvision import-time crashes on ABI mismatch; force the heavy import path
-        from torchvision.io import ImageReadMode  # noqa: F401
-        import torchvision
-        return torchvision.__version__
-
-    def flash_attn_loadable() -> str:
-        import flash_attn
-        # Force the CUDA module to import — this is what fails on ABI mismatch
-        from flash_attn import flash_attn_interface  # noqa: F401
-        return flash_attn.__version__
-
-    def fla_loadable() -> str:
-        # flash-linear-attention exposes its kernels via fla.*
-        import fla
-        return getattr(fla, "__version__", "installed")
-
-    def causal_conv1d_loadable() -> str:
-        import causal_conv1d
-        # Force the CUDA backing module — this is the ABI-mismatch tripwire
-        from causal_conv1d import causal_conv1d_fn  # noqa: F401
-        return getattr(causal_conv1d, "__version__", "installed")
 
     def bitsandbytes_loadable() -> str:
         import bitsandbytes as bnb
@@ -112,13 +98,11 @@ def main() -> int:
     checks = [
         ("torch", torch_version),
         ("torch.cuda", torch_cuda),
-        ("torchvision", torchvision_loadable),
+        ("unsloth", unsloth_loadable),
+        ("trl", trl_loadable),
         ("transformers", transformers_loadable),
         ("peft", peft_loadable),
         ("accelerate", accelerate_loadable),
-        ("flash_attn", flash_attn_loadable),
-        ("flash-linear-attention", fla_loadable),
-        ("causal_conv1d", causal_conv1d_loadable),
         ("bitsandbytes", bitsandbytes_loadable),
         ("HF_HOME", hf_home_persistent),
         ("PYTORCH_CUDA_ALLOC_CONF", cuda_alloc_conf),

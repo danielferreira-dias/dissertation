@@ -5,12 +5,13 @@ GPU pod. Idempotent across pod restarts.
 
 ## What's here
 
-- `setup_pod.sh` — install the pinned stack + kernels, log into HF, validate env
-- `verify_env.py` — sanity checks (torch CUDA, ABI, key imports, env vars, bf16 matmul)
-- `../requirements-gpu.txt` — pinned pure-Python deps + torch+cu124
-- `../requirements-kernels.txt` — pinned CUDA kernel wheels (flash-attn, fla, causal-conv1d)
+- `setup_pod.sh` — `pip install unsloth + pure-Python deps`, log into HF, validate
+- `verify_env.py` — sanity checks (torch CUDA, unsloth/trl/transformers/peft imports, env vars, bf16 matmul)
+- `../requirements-gpu.txt` — `unsloth[cu124-torch260]` + non-bundled deps (PyYAML, tensorboard, sentencepiece, …)
 - `sync_to_volume.sh` — rsync repo + image data from laptop to pod (legacy, unchanged)
 - `run.sh` — kick off a single training run in tmux (legacy, unchanged)
+
+The pipeline now uses **Unsloth's `FastVisionModel`** for model loading + LoRA, and **TRL's `SFTTrainer`** for the training loop (Unsloth bundles the matching torch/transformers/peft/accelerate/bitsandbytes/flash-attn/fla/triton stack as one install).
 
 ## Driver tier assumed
 
