@@ -106,20 +106,27 @@ class MultimodalCollator:
             "labels": labels,
         }
         if pixel_list:
-            # All processors here emit one image per sample with batch dim 1 stripped.
-            # Stack along a new batch dim to get (B, ...).
-            batch["pixel_values"] = torch.stack(pixel_list, dim=0)
+            # Some processors emit fixed-shape pixels (Gemma family) → stack; others
+            # emit variable-shape patch tensors (Qwen-VL dynamic resolution) → cat.
+            batch["pixel_values"] = self._stack_or_cat(pixel_list)
 
-        # Pass-through of extras: pad seq-aligned tensors to max_len, stack patch tensors.
+        # Pass-through of extras: pad seq-aligned tensors to max_len, stack-or-cat patches.
         for k, tensors in extra.items():
             first = tensors[0]
             if first.dim() == 1 and first.shape[0] == input_ids_list[0].shape[0]:
                 # Seq-aligned (e.g. mm_token_type_ids) — pad with 0 to max_len.
                 batch[k] = self._pad_seq_aligned(tensors, batch["input_ids"].shape[-1])
             else:
-                # Patch-level (e.g. image_position_ids) — stack to add batch dim.
-                batch[k] = torch.stack(tensors, dim=0)
+                # Patch-level (e.g. image_position_ids, image_grid_thw).
+                batch[k] = self._stack_or_cat(tensors)
         return batch
+
+    @staticmethod
+    def _stack_or_cat(tensors: list[torch.Tensor]) -> torch.Tensor:
+        shape = tensors[0].shape
+        if all(t.shape == shape for t in tensors):
+            return torch.stack(tensors, dim=0)
+        return torch.cat(tensors, dim=0)
 
     @staticmethod
     def _pad_seq_aligned(tensors: list[torch.Tensor], max_len: int) -> torch.Tensor:
