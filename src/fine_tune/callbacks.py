@@ -5,11 +5,15 @@ import csv
 from pathlib import Path
 from typing import Any
 
+from transformers import TrainerCallback
 
-class CSVLoggerCallback:
+
+class CSVLoggerCallback(TrainerCallback):
     """Writes step-level metrics to a CSV on the volume.
 
     Duplicates TensorBoard logs in plain-text form for dissertation tables.
+    Inherits the no-op default lifecycle hooks (on_train_begin, on_step_end,
+    etc.) so transformers 5.x's full callback dispatch doesn't AttributeError.
     """
 
     HEADER = ["step", "epoch", "loss", "eval_loss", "learning_rate"]
@@ -46,7 +50,7 @@ class CSVLoggerCallback:
             w.writerow(row)
 
 
-class HFHubPushCallback:
+class HFHubPushCallback(TrainerCallback):
     """At on_train_end, push the (best, already-loaded) PEFT adapter to HF Hub.
 
     Uploads only the adapter (~100-400 MB), not base weights. Also uploads
