@@ -22,7 +22,7 @@ class LoraConfig:
     alpha: int
     dropout: float
     bias: str
-    target_modules: list[str]
+    target_modules: list[str] | str
     modules_to_save: list[str] = field(default_factory=list)
     freeze_vision_tower: bool = True
 

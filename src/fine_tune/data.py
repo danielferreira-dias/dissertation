@@ -48,10 +48,18 @@ class MultimodalCollator:
         tokenizer = getattr(processor, "tokenizer", processor)
         self.pad_token_id = getattr(tokenizer, "pad_token_id", None) or 0
 
+    # Keys we explicitly handle below; everything else is opaquely passed through.
+    _SEQ_KEYS = ("input_ids", "attention_mask")
+    _CORE_KEYS = ("input_ids", "attention_mask", "pixel_values")
+    # Optional processor-output → model-input renames (per-model; empty by default).
+    _RENAMES: dict[str, str] = {}
+
     def __call__(self, rows: Sequence[dict[str, Any]]) -> dict[str, torch.Tensor]:
         input_ids_list: list[torch.Tensor] = []
         label_list: list[torch.Tensor] = []
         pixel_list: list[torch.Tensor] = []
+        # For any extra processor outputs (e.g. mm_token_type_ids, image_position_ids).
+        extra: dict[str, list[torch.Tensor]] = {}
 
         for row in rows:
             conversation, _ = self._split_row(row)
@@ -84,6 +92,13 @@ class MultimodalCollator:
                 pv = full["pixel_values"]
                 pixel_list.append(pv.squeeze(0) if pv.dim() == 4 and pv.shape[0] == 1 else pv)
 
+            for k, v in full.items():
+                if k in self._CORE_KEYS or not torch.is_tensor(v):
+                    continue
+                # Squeeze the leading batch dim of 1 added by return_tensors="pt".
+                t = v.squeeze(0) if v.dim() >= 1 and v.shape[0] == 1 else v
+                extra.setdefault(self._RENAMES.get(k, k), []).append(t)
+
         input_ids, attention_mask, labels = self._pad(input_ids_list, label_list)
         batch: dict[str, torch.Tensor] = {
             "input_ids": input_ids,
@@ -91,11 +106,28 @@ class MultimodalCollator:
             "labels": labels,
         }
         if pixel_list:
-            if pixel_list[0].dim() == 3:
-                batch["pixel_values"] = torch.stack(pixel_list, dim=0)
+            # All processors here emit one image per sample with batch dim 1 stripped.
+            # Stack along a new batch dim to get (B, ...).
+            batch["pixel_values"] = torch.stack(pixel_list, dim=0)
+
+        # Pass-through of extras: pad seq-aligned tensors to max_len, stack patch tensors.
+        for k, tensors in extra.items():
+            first = tensors[0]
+            if first.dim() == 1 and first.shape[0] == input_ids_list[0].shape[0]:
+                # Seq-aligned (e.g. mm_token_type_ids) — pad with 0 to max_len.
+                batch[k] = self._pad_seq_aligned(tensors, batch["input_ids"].shape[-1])
             else:
-                batch["pixel_values"] = torch.cat(pixel_list, dim=0)
+                # Patch-level (e.g. image_position_ids) — stack to add batch dim.
+                batch[k] = torch.stack(tensors, dim=0)
         return batch
+
+    @staticmethod
+    def _pad_seq_aligned(tensors: list[torch.Tensor], max_len: int) -> torch.Tensor:
+        out = torch.zeros((len(tensors), max_len), dtype=tensors[0].dtype)
+        for i, t in enumerate(tensors):
+            n = min(t.shape[-1], max_len)
+            out[i, :n] = t[:n]
+        return out
 
     def _split_row(self, row: dict[str, Any]) -> tuple[list[dict], list[Image.Image]]:
         messages = row["messages"]
