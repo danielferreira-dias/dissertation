@@ -1,0 +1,13 @@
+# CUDA kernels installed AFTER torch is pinned, with --no-build-isolation so they bind
+# against the already-installed torch (not whatever pip would resolve fresh).
+#
+# Each pin maps to a known-good pre-built wheel for torch 2.6.0+cu124 — no source compile.
+#
+# DO NOT auto-upgrade these. Past disasters:
+#   - flash-linear-attention 0.5.0 → fla-core 0.5.0 → torch>=2.7 → cu130 wheels → driver
+#     R565 (CUDA 12.7) can't run them → torch.cuda.is_available() = False → entire env
+#     broken in cascade.
+
+flash-attn==2.8.3
+flash-linear-attention==0.4.2
+causal-conv1d==1.6.1.post4
