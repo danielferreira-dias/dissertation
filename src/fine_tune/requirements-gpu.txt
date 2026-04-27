@@ -1,9 +1,9 @@
 # Installed by scripts/setup_pod.sh on a fresh RunPod L40S pod.
 # Pins track the spec; bump as needed at runtime and commit the change.
-transformers>=4.48,<5.0
-peft>=0.13,<0.20
+transformers==5.6.2
+peft>=0.19.1,<0.20
 trl>=0.13,<0.30
-accelerate>=1.2,<2.0
+accelerate>=1.13,<2.0
 bitsandbytes>=0.44,<1.0
 datasets>=3.0,<4.0
 pillow>=10.0
