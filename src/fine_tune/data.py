@@ -60,6 +60,7 @@ class MultimodalCollator:
                 conversation,
                 tokenize=True,
                 return_dict=True,
+                return_tensors="pt",
                 add_generation_prompt=False,
             )
             full_ids = full["input_ids"].squeeze(0)
@@ -69,6 +70,7 @@ class MultimodalCollator:
                 user_only,
                 tokenize=True,
                 return_dict=True,
+                return_tensors="pt",
                 add_generation_prompt=True,
             )
             prefix_len = prefix["input_ids"].shape[-1]
