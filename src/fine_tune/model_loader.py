@@ -49,7 +49,6 @@ def load_model_and_processor(model_cfg: ModelConfig, lora_cfg: LoraConfig):
         AutoConfig,
         AutoModelForCausalLM,
         AutoModelForImageTextToText,
-        AutoModelForVision2Seq,
         AutoProcessor,
     )
     from peft import LoraConfig as PeftLoraConfig, get_peft_model
@@ -61,9 +60,13 @@ def load_model_and_processor(model_cfg: ModelConfig, lora_cfg: LoraConfig):
     )
     arch = (config.architectures or ["AutoModelForCausalLM"])[0]
 
-    if "Vision2Seq" in arch or ("Qwen" in arch and "VL" in arch):
-        loader = AutoModelForVision2Seq
-    elif "ImageTextToText" in arch or arch.startswith("Gemma3") or arch.startswith("MedGemma"):
+    # transformers 5.x consolidates Vision2Seq + ImageTextToText into the latter.
+    multimodal_markers = (
+        "Vision2Seq", "ImageTextToText",
+        "Gemma3", "Gemma4", "MedGemma",
+    )
+    is_qwen_vl = "Qwen" in arch and "VL" in arch
+    if is_qwen_vl or any(m in arch for m in multimodal_markers):
         loader = AutoModelForImageTextToText
     else:
         loader = AutoModelForCausalLM
