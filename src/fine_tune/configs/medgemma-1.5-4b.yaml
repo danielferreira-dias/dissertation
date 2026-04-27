@@ -16,8 +16,8 @@ lora:
 training:
   output_dir: /workspace/runs/medgemma-1.5-4b
   num_train_epochs: 5
-  per_device_train_batch_size: 2
-  gradient_accumulation_steps: 8
+  per_device_train_batch_size: 4
+  gradient_accumulation_steps: 4
   learning_rate: 1.0e-4
   warmup_ratio: 0.03
   lr_scheduler_type: cosine

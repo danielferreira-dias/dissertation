@@ -16,12 +16,12 @@ lora:
 training:
   output_dir: /workspace/runs/qwen3.5-9b
   num_train_epochs: 5
-  per_device_train_batch_size: 1
-  gradient_accumulation_steps: 16
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 8
   learning_rate: 1.0e-4
   warmup_ratio: 0.03
   lr_scheduler_type: cosine
-  optim: paged_adamw_8bit
+  optim: adamw_torch
   weight_decay: 0.01
   bf16: true
   gradient_checkpointing: true
