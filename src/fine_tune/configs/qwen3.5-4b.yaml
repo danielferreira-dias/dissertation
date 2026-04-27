@@ -16,10 +16,11 @@ lora:
 training:
   output_dir: /workspace/runs/qwen3.5-4b
   num_train_epochs: 5
-  # Qwen 3.5's chunk_gated_delta_rule attention is memory-heavy at seq=4096.
-  # Keeping per-device batch low; effective batch stays 16 via grad_accum.
-  per_device_train_batch_size: 2
-  gradient_accumulation_steps: 8
+  # Qwen 3.5's chunk_gated_delta_rule attention is memory-heavy at seq=4096
+  # (it casts to fp32 internally, doubling memory). Even batch=2 OOMs on
+  # H100 80GB with seq=4096. Drop to per-device batch=1; effective batch=16.
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 16
   learning_rate: 1.0e-4
   warmup_ratio: 0.03
   lr_scheduler_type: cosine
