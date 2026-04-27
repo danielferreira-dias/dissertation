@@ -1,13 +1,31 @@
-# CUDA kernels installed AFTER torch is pinned, with --no-build-isolation so they bind
-# against the already-installed torch (not whatever pip would resolve fresh).
+# CUDA kernels installed AFTER torch is pinned, with --no-build-isolation so
+# they bind against the already-installed torch (not whatever pip would resolve fresh).
 #
-# Each pin maps to a known-good pre-built wheel for torch 2.6.0+cu124 — no source compile.
+# IMPORTANT: flash-attn and causal-conv1d only publish source tarballs to PyPI.
+# Their pre-built wheels live on GitHub releases — install via direct URL or
+# pip will spend 15-30 min compiling from source.
+#
+# Wheel selection assumes:
+#   torch        == 2.6.0+cu124
+#   Python       3.11
+#   CUDA toolkit == 12.x
+#   PyTorch ABI  cxx11abiFALSE (the default Linux x86_64 build)
+#
+# If you upgrade torch / Python / CUDA, regenerate the URLs from:
+#   gh api repos/Dao-AILab/flash-attention/releases/tags/v2.8.3 --jq '.assets[].name'
+#   gh api repos/Dao-AILab/causal-conv1d/releases/tags/v1.6.1.post4 --jq '.assets[].name'
 #
 # DO NOT auto-upgrade these. Past disasters:
-#   - flash-linear-attention 0.5.0 → fla-core 0.5.0 → torch>=2.7 → cu130 wheels → driver
-#     R565 (CUDA 12.7) can't run them → torch.cuda.is_available() = False → entire env
-#     broken in cascade.
+#   flash-linear-attention 0.5.0 → fla-core 0.5.0 → torch>=2.7 → cu130 wheels →
+#   driver R565 (CUDA 12.7) can't run them → torch.cuda.is_available() = False.
 
-flash-attn==2.8.3
+# flash-attn 2.8.3 (wheel for torch 2.6 cu12 cp311 cxx11abiFALSE)
+https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.6cxx11abiFALSE-cp311-cp311-linux_x86_64.whl
+
+# causal-conv1d 1.6.1.post4 (wheel for torch 2.6 cu12 cp311 cxx11abiFALSE)
+https://github.com/Dao-AILab/causal-conv1d/releases/download/v1.6.1.post4/causal_conv1d-1.6.1+cu12torch2.6cxx11abiFALSE-cp311-cp311-linux_x86_64.whl
+
+# flash-linear-attention 0.4.2 — IS on PyPI, no torch upper bound, last version
+# before fla 0.5.0 forced torch>=2.7. Provides the fast Triton kernels that
+# Qwen 3.5's chunk_gated_delta_rule uses, instead of the slow torch fallback.
 flash-linear-attention==0.4.2
-causal-conv1d==1.6.1.post4
