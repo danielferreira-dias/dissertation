@@ -258,9 +258,64 @@ def push_full_private(repo_id: str, source_map: dict[str, str]) -> None:
     print("  full private push complete")
 
 
+def push_full_with_images_embedded(repo_id: str, source_map: dict[str, str]) -> None:
+    """Add new configs to derm-reasoning-full where each row carries the actual
+    image bytes via datasets.Image(), so `load_dataset(...)` returns rows that
+    are immediately trainable — no separate image folder needed.
+
+    Adds two new configs alongside the existing path-only ones:
+      full_reasoning_with_images   ~12 GB Parquet, embedded image bytes
+      label_only_with_images       ~12 GB Parquet, embedded image bytes (same images)
+    """
+    from datasets import Dataset, DatasetDict, Features, Image, Value
+    from huggingface_hub import HfApi
+
+    print(f"\n=== Adding image-embedded configs → {repo_id} (private) ===")
+    api = HfApi()
+    api.create_repo(repo_id=repo_id, repo_type="dataset", private=True, exist_ok=True)
+
+    for fmt in ("full_reasoning", "label_only"):
+        print(f"\n[{fmt}_with_images]")
+        splits = {}
+        for split in ("train", "val"):
+            jp = DATA_FT / fmt / f"{split}.jsonl"
+            rows = load_and_augment(jp, source_map)
+
+            # Replace the relative path in the top-level `image` field with an
+            # absolute path; datasets.Image() will load + embed the bytes on push.
+            kept: list[dict[str, Any]] = []
+            n_missing = n_zero = 0
+            for r in rows:
+                abs_path = REPO_ROOT / r["image"]
+                if not abs_path.exists():
+                    n_missing += 1
+                    continue
+                if abs_path.stat().st_size == 0:
+                    n_zero += 1
+                    continue
+                r = dict(r)
+                r["image"] = str(abs_path)
+                kept.append(r)
+            print(f"  {split}: {len(kept)} rows  (skipped missing={n_missing} zero-byte={n_zero})")
+
+            # Schema: Image() embeds bytes; messages stays as inferred struct.
+            features = Features({
+                "messages": Dataset.from_list(kept[:1]).features["messages"],
+                "image": Image(),
+                "image_id": Value("string"),
+                "class": Value("string"),
+                "source": Value("string"),
+            })
+            ds = Dataset.from_list(kept, features=features)
+            splits[split] = ds
+
+        DatasetDict(splits).push_to_hub(repo_id, config_name=f"{fmt}_with_images", private=True)
+        print(f"  pushed config {fmt}_with_images")
+
+
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("--target", choices=["reasoning", "redistributable", "full"], required=True)
+    p.add_argument("--target", choices=["reasoning", "redistributable", "full", "full-with-images"], required=True)
     p.add_argument("--repo-prefix", default="danielfdias98", help="Hub user/org prefix")
     p.add_argument("--dry-run", action="store_true", help="Build dataset locally but don't push")
     args = p.parse_args()
@@ -290,6 +345,12 @@ def main() -> None:
             print("[dry-run] would push full private repo")
             return
         push_full_private(repo, source_map)
+    elif args.target == "full-with-images":
+        repo = f"{args.repo_prefix}/derm-reasoning-full"
+        if args.dry_run:
+            print("[dry-run] would push image-embedded configs to private full repo")
+            return
+        push_full_with_images_embedded(repo, source_map)
 
 
 if __name__ == "__main__":

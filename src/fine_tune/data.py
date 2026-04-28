@@ -1,9 +1,20 @@
 """Dataset + collator for VLM SFT via Unsloth.
 
-The chat-format JSONL stores image references as filesystem paths (cheap to
-keep on disk; loading 25k PIL objects up front is ~30GB+ RAM). Per-batch we
-swap each `{"type": "image", "image": "<path>"}` → `{"type": "image",
-"image": <PIL>}` and hand the rows to UnslothVisionDataCollator.
+Two supported input shapes — both handled transparently by PathToImageCollator:
+
+  1. Local JSONL (cheap dev loop on a pod with images on disk):
+       {"messages": [..., {"type": "image", "image": "<rel/path>"}, ...]}
+     Per-batch the collator does Image.open(path) just-in-time. We never hold
+     25k PIL images in memory.
+
+  2. Hub-loaded dataset with image bytes embedded via datasets.Image() feature
+     (training on a fresh pod without local files):
+       row["messages"] = [..., {"type": "image", "image": "<rel/path>"}, ...]
+       row["image"]    = <PIL.Image (auto-decoded)>
+     The collator detects the top-level PIL and substitutes it into the
+     image-typed content part — so messages remain in the format Unsloth's
+     UnslothVisionDataCollator expects (PIL objects inline) without any
+     upfront .map() over the dataset.
 
 Label masking is delegated to `train_on_responses_only` inside the collator.
 """
@@ -20,16 +31,32 @@ def _open_image(path: str) -> Image.Image:
     return Image.open(path).convert("RGB")
 
 
-def load_chat_dataset(path: Path):
-    """Eagerly load a chat-format jsonl into a `datasets.Dataset`.
+def load_chat_dataset(path_or_repo: str | Path, *, config_name: str | None = None,
+                      split: str = "train"):
+    """Load a chat-format dataset for SFT.
 
-    Image paths stay as strings — the per-batch collator wrapper resolves them
-    to PIL just-in-time, so we never hold 25k images in memory.
+    Path-vs-repo dispatch:
+      - Path-like (str/Path that exists on disk OR ends in .jsonl): load JSONL.
+      - Anything else: treat as a HuggingFace Hub repo_id; uses datasets.load_dataset.
+
+    Hub configs are expected to be the image-embedded variants
+    (`<fmt>_with_images`) — those carry a top-level `image` Image() feature so
+    the collator can reach pixels without local files.
     """
-    from datasets import Dataset
+    from datasets import Dataset, load_dataset
 
+    p = Path(path_or_repo) if isinstance(path_or_repo, (str, Path)) else None
+    if p is not None and (p.exists() or str(p).endswith(".jsonl")):
+        return _load_local_jsonl(p)
+
+    # Hub repo
+    return load_dataset(str(path_or_repo), name=config_name, split=split)
+
+
+def _load_local_jsonl(path: Path):
+    from datasets import Dataset
     rows: list[dict[str, Any]] = []
-    with Path(path).open() as f:
+    with path.open() as f:
         for line in f:
             line = line.strip()
             if not line:
