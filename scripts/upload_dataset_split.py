@@ -36,20 +36,44 @@ NEW_REPOS = {
 }
 
 
-def push_one(fmt: str, repo_id: str, source_map: dict[str, str]) -> None:
-    from datasets import Dataset, DatasetDict
+def push_one(fmt: str, repo_id: str, source_map: dict[str, str],
+             with_images: bool = False) -> None:
+    from datasets import Dataset, DatasetDict, Features, Image, Value
     from huggingface_hub import HfApi
 
-    print(f"\n=== {fmt} → {repo_id} ===")
+    print(f"\n=== {fmt} → {repo_id} {'[with embedded images]' if with_images else ''} ===")
     api = HfApi(token=os.environ.get("HF_TOKEN"))
     api.create_repo(repo_id=repo_id, repo_type="dataset", private=False, exist_ok=True)
+
+    from upload_dataset_to_hub import REPO_ROOT  # type: ignore
 
     splits = {}
     for split in ("train", "val"):
         jp = DATA_FT / fmt / f"{split}.jsonl"
         rows = load_and_augment(jp, source_map)
-        print(f"  {split}: {len(rows)} rows")
-        splits[split] = Dataset.from_list(rows)
+        if with_images:
+            kept = []
+            n_skipped = 0
+            for r in rows:
+                abs_path = REPO_ROOT / r["image"]
+                if not abs_path.exists() or abs_path.stat().st_size == 0:
+                    n_skipped += 1
+                    continue
+                r = dict(r)
+                r["image"] = str(abs_path)
+                kept.append(r)
+            print(f"  {split}: {len(kept)} rows ({n_skipped} skipped)")
+            features = Features({
+                "messages": Dataset.from_list(kept[:1]).features["messages"],
+                "image": Image(),
+                "image_id": Value("string"),
+                "class": Value("string"),
+                "source": Value("string"),
+            })
+            splits[split] = Dataset.from_list(kept, features=features)
+        else:
+            print(f"  {split}: {len(rows)} rows")
+            splits[split] = Dataset.from_list(rows)
     DatasetDict(splits).push_to_hub(repo_id, token=os.environ.get("HF_TOKEN"))
     print(f"  pushed → https://huggingface.co/datasets/{repo_id}")
 
@@ -130,6 +154,8 @@ def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--only", choices=list(NEW_REPOS.keys()),
                    help="Push just one of the two splits (default: both)")
+    p.add_argument("--with-images", action="store_true",
+                   help="Embed image bytes via datasets.Image(). ~12 GB per repo.")
     args = p.parse_args()
 
     if not os.environ.get("HF_TOKEN"):
@@ -142,7 +168,7 @@ def main() -> None:
     for fmt, repo in NEW_REPOS.items():
         if args.only and args.only != fmt:
             continue
-        push_one(fmt, repo, source_map)
+        push_one(fmt, repo, source_map, with_images=args.with_images)
         upload_card(repo, fmt)
 
 
