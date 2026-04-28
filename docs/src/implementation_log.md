@@ -1243,6 +1243,85 @@ Users are required to cite all five source datasets (SCIN, PAD-UFES-20, SkinCAP,
 
 ---
 
+## Phase 10: Fine-Tuning Configuration and Hyperparameter Selection
+
+### 10.1 Methodology
+
+Fine-tuning is performed using **parameter-efficient adaptation via Low-Rank Adaptation (LoRA)** rather than full-parameter SFT. LoRA inserts low-rank decomposition matrices into the attention and feed-forward projections, training only the inserted matrices while the base model weights remain frozen (Hu et al., *LoRA: Low-Rank Adaptation of Large Language Models*, arXiv:2106.09685, 2021). This decision is driven by three constraints documented in the literature on small dermatology VLMs: (i) the campaign target is small models (4–9B) whose full-parameter SFT exceeds the memory envelope of the available GPU tier (NVIDIA A40, 48 GB), (ii) prior dermatology VLMs at comparable scale (Skin-R1, DermoGPT, SkinGPT-R1) all use LoRA or adapter-only training with rank 32–64, demonstrating that parameter-efficient methods recover the bulk of full-FT quality at a fraction of the cost, and (iii) LoRA adapters at our chosen rank are <500 MB per model, enabling lightweight redistribution and reproducibility.
+
+The training framework is **Unsloth** (apache-2.0 / AGPL-3.0, github.com/unslothai/unsloth) running through TRL's `SFTTrainer`. Unsloth provides Triton kernels for the dominant attention paths in our base models (Qwen 3.5's `chunk_gated_delta_rule`, Gemma 3/4 attention) plus first-class multimodal collator support (`UnslothVisionDataCollator`, `FastVisionModel.get_peft_model` with the `finetune_vision_layers` flag). The decision to adopt Unsloth followed an earlier campaign-blocking dependency disaster (Phase 8) in which `pip install -U flash-linear-attention` silently upgraded torch to a CUDA tier the pod's NVIDIA driver could not run; Unsloth's matched-version extras (e.g. `unsloth[cu124-torch260]`) eliminate that class of failure.
+
+### 10.2 Datasets
+
+The training datasets are the two image-embedded public Hub repositories produced in Phase 9:
+
+| Variant | Hub repo | Train rows | Val rows | Assistant turn |
+|---|---|---:|---:|---|
+| **Treatment** (full reasoning) | [danielfdias98/derm-reasoning-full-reasoning](https://huggingface.co/datasets/danielfdias98/derm-reasoning-full-reasoning) | 25,637 | 2,849 | Diagnosis + category + observation + morphology + color + texture + border + location + size + reasoning + confidence + Fitzpatrick estimate |
+| **Control** (label only) | [danielfdias98/derm-reasoning-label-only](https://huggingface.co/datasets/danielfdias98/derm-reasoning-label-only) | 25,637 | 2,849 | Diagnosis + category only |
+
+Both datasets share the same stratified 90/10 image split (seed = 42) so any difference in downstream evaluation is attributable to supervision density rather than data leakage. The on-disk schema follows Unsloth's canonical convention (image + instruction + response columns at row top-level), matching the format of Unsloth's published vision tutorials (e.g. `unsloth/Radiology_mini`); Unsloth's training pipeline performs the wrap into the chat-template `messages` structure internally before the trainer sees the batch.
+
+### 10.3 Per-Model Hyperparameter Tables
+
+Three base models are fine-tuned, spanning a medical-specialised vision encoder (MedGemma 1.5 4B's MedSigLIP), a generalist Gemma family member at the same parameter count (Gemma 4 E4B), and a third architecture family at two scales for capacity comparison (Qwen 3.5 4B and 9B). Each base model is fine-tuned twice — once on each dataset variant — yielding **6 fine-tune runs total**.
+
+Hyperparameter values that are common across all runs are reported once below; per-model deviations are tabulated separately.
+
+#### 10.3.1 Common configuration (all six runs)
+
+| Component | Value | Source |
+|---|---|---|
+| Adaptation | LoRA, 16-bit base weights | Hu et al., 2021; Unsloth's `LoRA (16-bit)` mode |
+| LoRA rank `r` | 32 | Unsloth Gemma 4 docs (`r=32`); Skin-R1 used `r=64`. We interpolate at 32 for a domain-shift (medical) task at the 4–9B scale, matching Unsloth's published Gemma-4 vision recipe |
+| LoRA alpha | 32 (= `r`) | Unsloth recommendation: `alpha == r at least`; Hu et al. 2021 §3.4 shows scaling alpha proportional to r is robust |
+| LoRA dropout | 0.05 | Light regularisation appropriate for our 25k-row dataset; matches our pre-Unsloth validated config and is consistent with Unsloth's `0`–`0.1` range |
+| Bias | `none` | Standard LoRA practice (no bias parameters trained) |
+| `target_modules` | `"all-linear"` | Unsloth's idiom; covers `q_proj/k_proj/v_proj/o_proj/gate_proj/up_proj/down_proj` plus model-specific projections without manual enumeration |
+| `finetune_vision_layers` | `False` | Vision tower frozen for instruction-style SFT, preserving MedSigLIP's medical pre-training advantage on MedGemma (see §7.16) and Qwen-VL's early-fusion features. Recommended by Unsloth's vision fine-tuning guide |
+| Precision | bf16 LoRA on bf16 base | Avoids the fp16 NaN risks documented for Qwen 3.5 in Unsloth's troubleshooting docs; bf16 is the consensus precision for Ampere/Hopper VLM SFT |
+| Optimiser | AdamW 8-bit (Dettmers et al., *8-bit Optimizers via Block-wise Quantization*, arXiv:2110.02861, 2021) | Frees ~4 bytes/param of optimiser state vs full AdamW; recommended by Unsloth across all listed model families |
+| Weight decay | 0.01 (Qwen / MedGemma) / 0.001 (Gemma 4) | Per-family Unsloth default; the lower value for Gemma 4 reflects its sensitivity to over-regularisation in Unsloth's published recipe |
+| Number of epochs | 5 | Unsloth's documentation suggests "1–3 with diminishing returns past 3"; we extend to 5 because (a) the dataset is small (25k) relative to full-corpus VLM SFT (typically ≥50k), (b) early-stopping is used (see §10.4) so no harm is done if convergence is earlier, and (c) the structured-reasoning supervision is information-dense per row |
+| Effective batch size | 16 | `per_device_train_batch_size × gradient_accumulation_steps`. 16 is the consensus VLM SFT batch size in published recipes (Unsloth, Skin-R1, DermoGPT) |
+| Random seed | 42 | Reproducibility (matches the dataset split seed) |
+
+#### 10.3.2 Per-model deviations
+
+Per-device batch size and gradient-accumulation are tuned to fit each model in the A40 48 GB envelope while preserving the effective batch size of 16. The learning-rate schedule and warmup follow Unsloth's per-family recommendations.
+
+| Setting | Qwen 3.5 4B | Qwen 3.5 9B | Gemma 4 E4B | MedGemma 1.5 4B |
+|---|---|---|---|---|
+| Base model | `unsloth/Qwen3.5-4B` | `unsloth/Qwen3.5-9B` | `unsloth/gemma-4-E4B-it` | `unsloth/medgemma-1.5-4b-it` |
+| Expected VRAM (bf16 LoRA) | ~10 GB | ~22 GB | ~17 GB | ~16 GB |
+| `per_device_train_batch_size` | 2 | 1 | 2 | 2 |
+| `gradient_accumulation_steps` | 8 | 16 | 8 | 8 |
+| Context length (`max_seq_length`) | 4096 | 4096 | 4096 | 4096 |
+| Learning rate | 2 × 10⁻⁴ | 2 × 10⁻⁴ | 2 × 10⁻⁴ | 2 × 10⁻⁴ |
+| LR scheduler | Cosine | Cosine | Linear | Cosine |
+| Warmup | 30 steps | 30 steps | 5 steps | 30 steps |
+
+Notes on the deviations:
+
+- **Qwen 3.5 4B/9B** follow Unsloth's `Qwen3.5-fine-tune` recipe. **Quantisation to 4-bit (QLoRA) is explicitly avoided** — Unsloth's troubleshooting docs warn that "QLoRA on Qwen 3.5 has higher than normal quantisation differences," and the medical domain's discrimination requirements amplify any such drift.
+- **Gemma 4 E4B** uses Unsloth's published Gemma-4 recipe verbatim (LR = 2 × 10⁻⁴, linear schedule, 5-step warmup, weight decay = 0.001). Note the **expected starting loss for Gemma 4 E2B/E4B is 13–15** per Unsloth's documentation, not the 1–3 range typical of larger-class models — this is normal behaviour driven by the model's compressed effective parameter count and is not indicative of training failure.
+- **MedGemma 1.5 4B** is built on the Gemma 3 backbone (Sellergren et al., *MedGemma Technical Report*, arXiv:2507.05201, 2025). Hyperparameters follow Unsloth's Gemma 3 recipe (cosine schedule, 30-step warmup, weight decay 0.01) rather than Gemma 4's, since the language backbone is Gemma 3.
+- **Context length 4096** is sized for the full-reasoning assistant turn (~600–800 tokens after structured-JSON formatting). For label-only ablation runs, 2048 would be sufficient; we keep 4096 across the campaign for direct comparability.
+
+### 10.4 Evaluation and Stopping Rule
+
+Each run is evaluated on the held-out 2,849-row validation split at the end of each epoch (`eval_strategy = "epoch"`, `save_strategy = "epoch"` to satisfy `load_best_model_at_end`'s constraint). The best checkpoint by `eval_loss` is loaded at training end and pushed to the Hugging Face Hub (`HFHubPushCallback`) as `danielfdias98/<model>-derm-reasoning-{full-reasoning,label-only}`. A per-run row is appended to `/workspace/runs/manifest.csv` capturing model, format, config SHA, best `eval_loss`, wall-clock hours, and Hub repo, providing a single source of truth for the dissertation results table.
+
+### 10.5 Ablation Design
+
+The full-reasoning vs label-only contrast (paired across all three architectures) directly tests the dissertation's central claim — that **structured chain-of-thought supervision contributes more to dermatological diagnostic accuracy than parameter-count scaling alone**. The relevant prior result is SkinFlow's Stage 1 ablation (Liu et al., arXiv:2601.09136, 2026), in which structured medical captioning contributed +9.23 % Top-1 accuracy on Fitzpatrick17k versus +4.74 % from architectural changes. By holding the architecture, base weights, dataset images, training schedule, and random seed constant across the two conditions and varying only the assistant-turn supervision density, any difference in post-training Top-1 accuracy on Fitzpatrick17k, Confusion Triads, and MM-Skin VQA is attributable to the structured reasoning signal — yielding a clean 3-architecture × 2-supervision factorial that the dissertation can statistically defend.
+
+### 10.6 Reporting
+
+Results from each of the six runs will be reported using the comparison-table convention established in Phase 7 (zero-shot baselines), extended with two columns per benchmark: post-fine-tuning Top-1 / Top-6 accuracy and Δ from the model's zero-shot baseline. Fairness disaggregation by Fitzpatrick skin type (FST I–II vs V–VI) follows the protocol of Daneshjou et al. (*Disparities in dermatology AI performance on a diverse, curated clinical image set*, Science Advances, 2022) and SkinGPT-R1's published per-FST breakdown (arXiv:2511.15242, 2025) for direct comparability.
+
+---
+
 ## Next Steps
 
 1. **Zero-shot baselines:** Run all 4 student models on Fitzpatrick17k + MM-Skin VQA + Confusion Triads (RunPod GPU)
