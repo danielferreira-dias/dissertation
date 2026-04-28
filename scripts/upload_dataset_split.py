@@ -36,12 +36,63 @@ NEW_REPOS = {
 }
 
 
+def _flat_features():
+    """Top-level schema matching Unsloth's canonical vision datasets
+    (e.g. unsloth/Radiology_mini): image + instruction + response, no
+    nested `messages` field. Studio wraps these into a chat turn pair
+    internally at training time. This avoids the datasets-library bug
+    that triggers on nullable Image() inside nested Sequence/struct.
+    """
+    from datasets import Features, Value, Image
+    return Features({
+        "image": Image(),
+        "instruction": Value("string"),
+        "response": Value("string"),
+        "image_id": Value("string"),
+        "class": Value("string"),
+        "source": Value("string"),
+    })
+
+
+def _flatten_row(row: dict, abs_path: str) -> dict | None:
+    """Pull the user instruction text and assistant response text out of
+    the original messages structure, returning a flat row matching _flat_features().
+    """
+    instruction = "Diagnose this skin condition."
+    response = ""
+    for m in row.get("messages", []):
+        role = m.get("role")
+        content = m.get("content")
+        if role == "user":
+            if isinstance(content, list):
+                for c in content:
+                    if c.get("type") == "text":
+                        instruction = c.get("text") or instruction
+        elif role == "assistant":
+            if isinstance(content, list):
+                response = "".join(
+                    c.get("text", "") for c in content if c.get("type") == "text"
+                )
+            else:
+                response = str(content) if content else ""
+    if not response:
+        return None
+    return {
+        "image": abs_path,            # Image() will read+embed bytes
+        "instruction": instruction,
+        "response": response,
+        "image_id": row["image_id"],
+        "class": row["class"],
+        "source": row["source"],
+    }
+
+
 def push_one(fmt: str, repo_id: str, source_map: dict[str, str],
              with_images: bool = False) -> None:
-    from datasets import Dataset, DatasetDict, Features, Image, Value
+    from datasets import Dataset, DatasetDict
     from huggingface_hub import HfApi
 
-    print(f"\n=== {fmt} → {repo_id} {'[with embedded images]' if with_images else ''} ===")
+    print(f"\n=== {fmt} → {repo_id} {'[INLINE PIL in messages]' if with_images else ''} ===")
     api = HfApi(token=os.environ.get("HF_TOKEN"))
     api.create_repo(repo_id=repo_id, repo_type="dataset", private=False, exist_ok=True)
 
@@ -59,18 +110,13 @@ def push_one(fmt: str, repo_id: str, source_map: dict[str, str],
                 if not abs_path.exists() or abs_path.stat().st_size == 0:
                     n_skipped += 1
                     continue
-                r = dict(r)
-                r["image"] = str(abs_path)
-                kept.append(r)
+                flat = _flatten_row(r, str(abs_path))
+                if flat is not None:
+                    kept.append(flat)
+                else:
+                    n_skipped += 1
             print(f"  {split}: {len(kept)} rows ({n_skipped} skipped)")
-            features = Features({
-                "messages": Dataset.from_list(kept[:1]).features["messages"],
-                "image": Image(),
-                "image_id": Value("string"),
-                "class": Value("string"),
-                "source": Value("string"),
-            })
-            splits[split] = Dataset.from_list(kept, features=features)
+            splits[split] = Dataset.from_list(kept, features=_flat_features())
         else:
             print(f"  {split}: {len(rows)} rows")
             splits[split] = Dataset.from_list(rows)
