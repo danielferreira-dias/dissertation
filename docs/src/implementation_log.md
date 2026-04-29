@@ -1322,6 +1322,117 @@ Results from each of the six runs will be reported using the comparison-table co
 
 ---
 
+## Phase 11: Fine-Tuning Execution
+
+This phase documents the operational execution of the fine-tuning campaign whose design was specified in Phase 10. Three notable deviations from the planned protocol — driven by hardware availability, tooling constraints in the Unsloth Studio (Beta) interface, and a runtime failure mode that consumed three pre-execution attempts before resolution — are recorded so that the dissertation's results can be re-interpreted in their light.
+
+### 11.1 Deviations from the Phase 10 Plan
+
+**Compute substrate.** Phase 10.4 specified an A40 48 GB pod. At deployment, an A40 instance was unavailable on the contracted RunPod tier; an RTX PRO 4500 Blackwell pod (sm_120, 32 GB VRAM, 58 GiB container RAM cap) was used for the first three attempts. Following the failure mode described in §11.2, the campaign was migrated to an L40S 48 GB pod (NVIDIA AD102, sm_89, 46,068 MiB GDDR6 ECC, 175 GiB container RAM cap, 13.6 effective vCPU on an AMD EPYC 9354 host). The L40S is the same silicon as the RTX 6000 Ada and is functionally equivalent to the planned A40 for LoRA fine-tuning at the parameter scales used here; no methodological consequence is expected from the substitution.
+
+**Architecture set.** The Phase 10.3 plan listed four base models (Qwen 3.5 4B, Qwen 3.5 9B, Gemma 4 E4B, MedGemma 1.5 4B) intended to support a three-architecture × two-supervision factorial (six runs, Phase 10.5–10.6). The executed campaign substitutes **Gemma 4 E2B** for MedGemma 1.5 4B and elevates it to a primary architecture, yielding a four-architecture × two-supervision factorial (eight runs). The substitution preserves the ablation logic of §10.5 and adds a within-Gemma-4 size contrast (E2B vs E4B), at the cost of dropping the medical-specialised baseline. MedGemma is deferred to a subsequent campaign.
+
+**Best-checkpoint selection.** Phase 10.4 specified `load_best_model_at_end=True` with `eval_strategy="epoch"` under the canonical Hugging Face Trainer interface. Unsloth Studio (Beta) does not expose either argument through its YAML schema; instead, it persists every checkpoint at a user-configurable cadence (`save_steps=800`) and records evaluation metrics in an SQLite database at `/root/.unsloth/studio/studio.db` (table `training_metrics`). To preserve the methodological intent, a post-hoc selector — `scripts/pick_best_checkpoint.py` — was implemented to query the database, locate the corresponding checkpoint directory, and push it to the Hugging Face Hub. Studio's evaluation cadence was set to `eval_steps=0.1` (≈ every 802 of 8,015 steps), yielding ten evaluation points per run, finer-grained than the per-epoch scheme planned.
+
+### 11.2 Pre-Execution Failure Mode and Resolution
+
+Two consecutive Studio runs (timestamps 2026-04-28 23:19:24 and 23:32:55 UTC) terminated identically: the training subprocess died at `final_step = 0` after approximately 4 minutes 35 seconds, during the validation-set VLM-format conversion phase, at sample index ~989 of 2,849. Neither attempt produced a Python traceback in the Studio log, and the SQLite `error_message` field reported only the generic string "Training process terminated unexpectedly". The crash was reproducible across hyperparameter changes (`max_seq_length: 2048→2850`; `save_steps: 30→800`; `train_on_completions: false→true`; `random_seed: 3407→42`), confirming that no field in the YAML was implicated.
+
+Diagnosis was achieved by inspecting the cgroup v1 memory accounting on the executing pod:
+
+```text
+/sys/fs/cgroup/memory/memory.events
+  oom 1
+  oom_kill 1
+  max  17478
+memory.peak  62,000,001,024 B  (57.74 GiB)
+memory.max   61,999,996,928 B  (57.74 GiB)
+```
+
+The `oom_kill = 1` counter, combined with `memory.peak ≈ memory.max`, establishes that the container memory cap had been reached and the kernel out-of-memory killer had terminated the training subprocess. SIGKILL bypasses Python signal handlers, which explains the absence of a traceback in stderr; in this configuration, **silence in the log is itself diagnostic** of an OS-level kill rather than a Python exception.
+
+The root cause is the in-memory VLM sample conversion implemented by Studio. With image bytes embedded in the published parquet via `datasets.Image()` and Gemma 4's per-image token expansion (~2,520 image tokens per sample), the working-set size for tokenising the 28,486-row train + validation corpus exceeds 58 GiB before the optimiser is initialised. No hyperparameter change addresses this, because the failure precedes any GPU activity: container RAM, not VRAM, is the binding constraint. The migration to the L40S template (175 GiB cap) resolved the failure; on the new pod, the training-subprocess working set stabilised at 109.9 GiB, comfortably below the new cap, confirming the diagnosis.
+
+### 11.3 Run 1: Gemma 4 E2B-it × Label-Only — Status as of 2026-04-29 01:30 UTC
+
+Run 1 is in progress at the time of writing. Its configuration matches Table 10.3.1 with two run-specific values: `max_seq_length = 2850` (sized to fit Gemma 4's image-token footprint plus the instruction and label tokens with no truncation) and `train_on_completions = true` (loss masked to the assistant-response tokens only, appropriate for the label-only supervision density). The full effective configuration is reproduced in Table 11.3.1.
+
+**Table 11.3.1.** Run 1 effective configuration.
+
+| Parameter | Value | Rationale |
+|---|---|---|
+| Base model | `unsloth/gemma-4-E2B-it` | Phase 10 architecture set, smallest Gemma 4 |
+| Dataset | `danielfdias98/derm-reasoning-label-only` | Phase 9 published repository |
+| `max_seq_length` | 2,850 | Image (~2,520) + instruction + label, non-truncating |
+| `num_epochs` | 5 | Phase 10.3.1 standardised |
+| `learning_rate` | 2 × 10⁻⁴ | Phase 10.3.2 Gemma 4 schedule |
+| `lr_scheduler_type` | Linear | Phase 10.3.2 Gemma 4 schedule |
+| `warmup_steps` | 5 | Phase 10.3.2 Gemma 4 schedule |
+| `weight_decay` | 0.001 | Phase 10.3.2 Gemma 4 schedule |
+| Effective batch size | 16 (= `batch_size 4 × grad_accum 4`) | Phase 10.3.1 standardised |
+| LoRA `r`, `α`, dropout | 32, 32, 0.05 | Phase 10.3.1 standardised |
+| `target_modules` | `all-linear` | Phase 10.3.1 standardised |
+| `optim` | `adamw_8bit` | Phase 10.3.1 standardised |
+| `gradient_checkpointing` | Unsloth | Phase 10.3.1 standardised |
+| `save_steps` | 800 | 10 checkpoints per run |
+| `eval_steps` | 0.1 (≈ 802) | 10 evaluations per run |
+| `train_on_completions` | True | Loss restricted to the diagnosis-label tokens |
+| `random_seed` | 42 | Phase 10.3.1 standardised |
+
+Run 1 began at 2026-04-29 00:12:04 UTC. The training subprocess maintained 100 % GPU utilisation during the steady-state phase, with VRAM stabilising at 11.1 / 46 GB and container RAM at 109 / 175 GiB throughout. After the Triton-compilation warmup (76.9 s for step 1), per-step wall-clock cost converged to 3.90 s mean (range 3.28 – 5.31 s over the most recent 100 steps); projected total run time is ~7.3 hours.
+
+The training-loss trajectory, drawn from the `training_metrics` table, exhibits the canonical fine-tuning shape — a rapid descent over the first ~100 steps, followed by a slower long-tail grind:
+
+**Table 11.3.2.** Training-loss trajectory, Run 1, sampled steps.
+
+| Step | Train loss | Grad norm | LR | Epoch |
+|---|---|---|---|---|
+| 1 | 16.34 | 48.10 | 0.0 | 0.000 |
+| 5 | 8.62 | 25.36 | 1.6 × 10⁻⁴ | 0.003 |
+| 50 | 0.31 | 0.52 | 2.0 × 10⁻⁴ | 0.030 |
+| 100 | 0.25 | 0.47 | 1.99 × 10⁻⁴ | 0.060 |
+| 800 | 0.11 | 0.18 | 1.80 × 10⁻⁴ | 0.500 |
+| 1,029 | mean(last 20) = 0.124 ± 0.035 | 0.17 | 1.74 × 10⁻⁴ | 0.640 |
+
+The starting loss of 16.34 is consistent with Unsloth's documented expectation for Gemma 4 E2B (13–15 range; §10.3.2 footnote on Gemma-4 family behaviour). No NaN or Inf values were observed across all 1,029 recorded steps. Gradient-norm magnitudes contracted from ~48 at initialisation to a stable range of 0.1–0.4 by step 50, indicating gradient stability and the absence of exploding-gradient pathology under the chosen LR schedule.
+
+### 11.4 First Evaluation Anomaly and Working Hypothesis
+
+The first scheduled evaluation fired at step 802 and reported `eval_loss = 3.9005` against a contemporaneous training-batch loss of 0.1601, a ratio of 24.4 ×. This magnitude is incompatible with classical overfitting: at step 802 the model has processed approximately one half of one epoch over the training corpus, and no individual training sample has been encountered more than once. Memorisation of the training distribution is ruled out on logical grounds at this point in training.
+
+The leading hypothesis — to be tested by the second evaluation at step 1,604 — is a **collator asymmetry between the training and evaluation pipelines under `train_on_completions = true`**. The completion-only data collator masks user and image tokens (replacing labels with `-100` in the cross-entropy computation), so the training loss is averaged over only the ~10–20 response tokens per sample. If Studio's evaluation pipeline applies a default (non-completion-only) collator, `eval_loss` is averaged over all ~2,550 tokens per sample including the un-trained image and instruction tokens. The expected ratio inflation under this hypothesis is on the order of (total tokens) / (response tokens) ≈ 100–250 ×; the observed 24 × is in the plausible range for a partial mask. This is consistent with documented Unsloth/TRL behaviour when the `eval_dataset` argument is supplied without an explicit `eval_data_collator`.
+
+Three diagnostic outcomes are pre-registered for the step-1,604 evaluation:
+
+1. `eval_loss` decreases substantially (e.g., 3.9 → 2.5) — the model is generalising along the same warped scale; the absolute eval-loss scale is uninformative, but **relative changes remain valid** for both within-run early-stopping decisions and best-checkpoint selection via `pick_best_checkpoint.py`.
+2. `eval_loss` remains within ±0.1 of 3.9 — the loss is dominated by un-trained-token noise; the training-loss curve and post-training empirical evaluation (Phase 10.6 metrics on Fitzpatrick17k, Confusion Triads, MM-Skin VQA) become the only meaningful signals for run quality.
+3. `eval_loss` rises significantly (> 4.5) — the collator-asymmetry artefact alone cannot explain the trajectory; deeper investigation of train/validation distribution mismatch, image-source skew, or pipeline corruption is warranted before continuing the campaign.
+
+The watcher infrastructure (§11.5) automatically reports this comparison after every evaluation, including the picker's selection of the lowest-`eval_loss` checkpoint observed to date.
+
+### 11.5 Watcher Infrastructure
+
+Two persistent monitors run in parallel during execution. The first polls Studio's web UI on its RunPod proxy URL every 60 s, alerting on three consecutive 5xx-class responses (down) or recovery thereafter (up); this catches the failure mode in which the Studio web server itself crashes independently of the training subprocess (observed once during the §11.2 diagnosis phase). The second polls `/root/.unsloth/studio/studio.db` over SSH every 60 s, compares the previous probe with the current one, and emits one of three classes of alert:
+
+- *Critical* — NaN or Inf in the recent loss window; loss spike (instantaneous loss > 5 × the mean of the last 20, after step 30); process stall (training-step count unchanged for ≥ 10 minutes); cgroup memory > 95 % of limit; `status` transition to `error` or `failed`.
+- *Warning* — gradient-norm peak exceeding 10 in the last 20 steps when the previous window was below 10.
+- *Milestone* — new checkpoint persisted; new `eval_loss` row recorded (followed by automatic invocation of `pick_best_checkpoint.py --json`, which reports whether the latest evaluation is the new minimum or whether an earlier checkpoint remains preferable); epoch boundary crossed; run completed.
+
+Together, the two monitors provide both the liveness signal (Studio reachable, training process alive) and the quality signal (loss healthy, checkpoint progress recorded, evaluation trajectory acceptable) required for unattended overnight execution.
+
+### 11.6 Provisional Observations
+
+At the time of writing, with Run 1 12.8 % complete and a single evaluation point recorded:
+
+- The pipeline is operational under the L40S configuration; the OOM failure that consumed the three pre-execution attempts has been definitively resolved by the migration to a higher-memory pod tier.
+- Training dynamics for Gemma 4 E2B with label-only supervision exhibit the textbook fine-tuning shape — rapid initial descent followed by a long-tail grind — with no early evidence of instability (no NaN/Inf, gradient norms contracted and stable, GPU utilisation at 100 %, container RAM flat at 62 % of the cap).
+- The first `eval_loss` value (3.9005 at step 802) cannot yet be interpreted on its absolute scale; relative comparison across evaluations remains the basis for both within-run early-stopping decisions and best-checkpoint selection.
+- The reproducibility of the OOM failure mode across all hyperparameter configurations attempted constitutes a methodological finding in its own right: **container memory provisioning, not GPU memory, is the binding constraint for end-to-end VLM SFT on this dataset**, and should be checked first when migrating between RunPod GPU tiers.
+
+The remaining seven runs (Gemma 4 E2B × full-reasoning; Gemma 4 E4B × {label-only, full-reasoning}; Qwen 3.5 4B × {label-only, full-reasoning}; Qwen 3.5 9B × {label-only, full-reasoning}) are queued behind Run 1 completion. Per-run intermediate observations and any anomalies will be appended to subsequent subsections of this Phase as they are recorded, preserving a single chronological record of the execution.
+
+---
+
 ## Next Steps
 
 1. **Zero-shot baselines:** Run all 4 student models on Fitzpatrick17k + MM-Skin VQA + Confusion Triads (RunPod GPU)
